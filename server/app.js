@@ -20,11 +20,13 @@ const USERS_FILE = path.join(DATA_DIR, 'users.json');
 
 function readUsers() {
   if (!fs.existsSync(USERS_FILE)) {
-    // 初始化默认管理员
+    // 初始化默认管理员 — 默认密码从环境变量读取
+    const defaultPwd = process.env.ADMIN_DEFAULT_PASSWORD || 'changbai2026';
     const defaultUsers = [
-      { id: 'admin', username: 'admin', password: hashPassword('admin888'), role: 'admin', createdAt: new Date().toISOString() }
+      { id: 'admin', username: 'admin', password: hashPassword(defaultPwd), role: 'admin', createdAt: new Date().toISOString() }
     ];
     fs.writeFileSync(USERS_FILE, JSON.stringify(defaultUsers, null, 2));
+    console.log('默认管理员已创建，请尽快修改密码');
     return defaultUsers;
   }
   return JSON.parse(fs.readFileSync(USERS_FILE, 'utf-8'));
