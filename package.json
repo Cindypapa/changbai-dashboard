@@ -1,0 +1,14 @@
+{
+  "name": "changbai-dashboard",
+  "version": "2.0.0",
+  "description": "长白街道综治中心指挥平台 - 动态数据版",
+  "main": "server/app.js",
+  "scripts": {
+    "start": "node server/app.js",
+    "build": "node scripts/build-frontend.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "multer": "^1.4.5-lts.1"
+  }
+}

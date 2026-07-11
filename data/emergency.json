@@ -1,0 +1,173 @@
+{
+  "alert_levels": [
+    {
+      "level": 1,
+      "name": "一般",
+      "count": 15,
+      "active": false
+    },
+    {
+      "level": 2,
+      "name": "较大",
+      "count": 3,
+      "active": true
+    },
+    {
+      "level": 3,
+      "name": "重大",
+      "count": 0,
+      "active": false
+    }
+  ],
+  "alert_events": [
+    {
+      "icon": "🔥",
+      "title": "消防预警 - 长白三社区",
+      "time": "2026-03-18 14:20"
+    },
+    {
+      "icon": "⚡",
+      "title": "用电异常 - 商业街",
+      "time": "2026-03-18 14:15"
+    }
+  ],
+  "resources": [
+    {
+      "icon": "🚒",
+      "count": 3,
+      "name": "消防站"
+    },
+    {
+      "icon": "🏥",
+      "count": 5,
+      "name": "医疗机构"
+    },
+    {
+      "icon": "🚔",
+      "count": 2,
+      "name": "派出所"
+    },
+    {
+      "icon": "🏢",
+      "count": 12,
+      "name": "避难场所"
+    },
+    {
+      "icon": "🚗",
+      "count": 8,
+      "name": "救援车辆"
+    },
+    {
+      "icon": "👥",
+      "count": 86,
+      "name": "应急人员"
+    }
+  ],
+  "map_image": "/changbai/uploads/changbai_map_1783664010.png",
+  "map_markers": [
+    {
+      "top": "30%",
+      "left": "40%",
+      "name": "应急指挥中心",
+      "color": "#00d4ff",
+      "type": "command",
+      "lat": 31.296,
+      "lng": 121.535
+    },
+    {
+      "top": "45%",
+      "left": "55%",
+      "name": "突发事件点",
+      "color": "#ff4444",
+      "type": "incident",
+      "lat": 31.291999999999998,
+      "lng": 121.53999999999999
+    },
+    {
+      "top": "25%",
+      "left": "35%",
+      "name": "消防站-1",
+      "color": "#ff9900",
+      "type": "fire",
+      "lat": 31.294,
+      "lng": 121.53099999999999
+    },
+    {
+      "top": "60%",
+      "left": "65%",
+      "name": "消防站-2",
+      "color": "#ff9900",
+      "type": "fire",
+      "lat": 31.279999999999998,
+      "lng": 121.541
+    },
+    {
+      "top": "50%",
+      "left": "30%",
+      "name": "医疗点",
+      "color": "#00ff88",
+      "type": "medical",
+      "lat": 31.288,
+      "lng": 121.53
+    },
+    {
+      "top": "35%",
+      "left": "60%",
+      "name": "避难场所",
+      "color": "#00ff88",
+      "type": "shelter",
+      "lat": 31.282,
+      "lng": 121.536
+    }
+  ],
+  "dispatch_teams": [
+    {
+      "icon": "🚒",
+      "name": "消防一组",
+      "status": "待命",
+      "status_color": "var(--accent-green)",
+      "location": "长白一路"
+    },
+    {
+      "icon": "👮",
+      "name": "民警一组",
+      "status": "出勤中",
+      "status_color": "var(--accent-orange)",
+      "location": "长白二路"
+    },
+    {
+      "icon": "🏥",
+      "name": "医疗一组",
+      "status": "待命",
+      "status_color": "var(--accent-green)",
+      "location": "社区卫生中心"
+    },
+    {
+      "icon": "🔧",
+      "name": "抢修一组",
+      "status": "待命",
+      "status_color": "var(--accent-green)",
+      "location": "供电所"
+    }
+  ],
+  "comm_records": [
+    {
+      "icon": "📞",
+      "title": "呼叫消防中心",
+      "time": "14:25:30",
+      "desc": "时长 2:35"
+    },
+    {
+      "icon": "📱",
+      "title": "群组广播",
+      "time": "14:22:15",
+      "desc": "已送达 86人"
+    }
+  ],
+  "map_center": [
+    31.29,
+    121.535
+  ],
+  "map_zoom": 14,
+  "map_type": "leaflet"
+}

@@ -1,0 +1,22 @@
+{
+  "data_sources": [
+    { "icon": "🏛️", "name": "公安数据", "status": "connecting", "status_text": "接入中" },
+    { "icon": "🏥", "name": "卫健数据", "status": "online", "status_text": "已接入" },
+    { "icon": "👥", "name": "民政数据", "status": "online", "status_text": "已接入" },
+    { "icon": "🏠", "name": "住建数据", "status": "online", "status_text": "已接入" },
+    { "icon": "🚗", "name": "交通数据", "status": "online", "status_text": "已接入" },
+    { "icon": "📞", "name": "信访数据", "status": "connecting", "status_text": "接入中" }
+  ],
+  "data_gather_chart": {
+    "labels": ["公安", "卫健", "民政", "住建", "交通", "信访", "网格"],
+    "data": [125, 86, 45, 68, 92, 28, 156]
+  },
+  "data_quality_chart": {
+    "labels": ["周一", "周二", "周三", "周四", "周五", "周六", "周日"],
+    "datasets": [
+      { "label": "完整率", "data": [95, 96, 94, 97, 95, 98, 96], "color": "#00ff88" },
+      { "label": "准确率", "data": [98, 97, 98, 99, 98, 99, 98], "color": "#00d4ff" },
+      { "label": "及时率", "data": [92, 93, 91, 94, 92, 95, 93], "color": "#ff9900" }
+    ]
+  }
+}

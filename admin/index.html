@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>长白综治中心 - 后台管理</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+            background: #0a1628;
+            color: #e0e6ed;
+            display: flex;
+            height: 100vh;
+        }
+
+        .sidebar {
+            width: 240px;
+            background: rgba(0, 26, 51, 0.95);
+            border-right: 1px solid rgba(0, 212, 255, 0.2);
+            padding: 20px 0;
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar-title {
+            padding: 0 20px 20px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #00d4ff;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+            margin-bottom: 10px;
+        }
+        .sidebar-sub {
+            font-size: 11px;
+            color: #666;
+            margin-top: 2px;
+        }
+        .nav-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+            border-left: 3px solid transparent;
+            font-size: 14px;
+            color: #b0b8c4;
+            -webkit-font-smoothing: antialiased;
+        }
+        .nav-item:hover { background: rgba(0, 212, 255, 0.1); color: #fff; }
+        .nav-item:active { transform: scale(0.98); }
+        .nav-item.active { background: rgba(0, 212, 255, 0.15); color: #00d4ff; border-left-color: #00d4ff; }
+
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .topbar {
+            padding: 15px 30px;
+            background: rgba(0, 26, 51, 0.9);
+            border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .topbar h2 { font-size: 16px; color: #00d4ff; }
+        .btn {
+            padding: 8px 20px;
+            border: 1px solid rgba(0, 212, 255, 0.4);
+            background: rgba(0, 212, 255, 0.15);
+            color: #00d4ff;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
+        }
+        .btn:hover { background: rgba(0, 212, 255, 0.3); }
+        .btn:active { transform: scale(0.96); }
+        .btn-primary { background: #00d4ff; color: #001a33; font-weight: bold; border: none; }
+        .btn-primary:hover { background: #00b8e0; box-shadow: 0 0 12px rgba(0, 212, 255, 0.4); }
+        .btn-primary:active { transform: scale(0.96); }
+        .btn-danger { border-color: #ff4444; color: #ff4444; background: rgba(255,68,68,0.1); }
+        .btn-danger:hover { background: rgba(255,68,68,0.3); }
+        .btn-danger:active { transform: scale(0.96); }
+        .btn-sm { padding: 4px 12px; font-size: 12px; }
+
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 30px;
+        }
+
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 13px; color: #b0b8c4; margin-bottom: 6px; font-weight: bold; }
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%;
+            max-width: 600px;
+            padding: 8px 12px;
+            background: rgba(0, 40, 80, 0.5);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 6px;
+            color: #fff;
+            font-size: 13px;
+            font-family: inherit;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+            outline: none;
+            border-color: #00d4ff;
+            box-shadow: 0 0 8px rgba(0, 212, 255, 0.3);
+        }
+        .form-group textarea { min-height: 80px; resize: vertical; font-family: monospace; }
+
+        .form-row { display: flex; gap: 12px; }
+        .form-row > * { flex: 1; }
+
+        .section-card {
+            background: rgba(0, 40, 80, 0.4);
+            border: 1px solid rgba(0, 212, 255, 0.15);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .section-card h3 {
+            font-size: 15px;
+            color: #00d4ff;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.15);
+        }
+
+        .item-list { margin-bottom: 10px; }
+        .item-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            padding: 8px;
+            background: rgba(0, 20, 40, 0.5);
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+        .item-row input { flex: 1; }
+
+        .add-btn {
+            color: #00d4ff;
+            cursor: pointer;
+            font-size: 13px;
+            padding: 6px 12px;
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px dashed rgba(0, 212, 255, 0.3);
+            border-radius: 6px;
+            display: inline-block;
+            margin-top: 8px;
+            transition: transform 0.2s ease, background 0.2s ease;
+        }
+        .add-btn:hover { background: rgba(0, 212, 255, 0.2); }
+        .add-btn:active { transform: scale(0.96); }
+
+        .section-save-btn {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            padding: 6px 16px;
+            background: #00d4ff;
+            color: #001a33;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+        }
+        .section-save-btn:hover { background: #00b8e0; box-shadow: 0 0 12px rgba(0, 212, 255, 0.4); }
+        .section-save-btn:active { transform: scale(0.96); }
+        .section-save-btn.saved { background: #00ff88; }
+        .section-card { position: relative; }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 24px;
+            background: #00ff88;
+            color: #001a33;
+            border-radius: 8px;
+            font-weight: bold;
+            z-index: 9999;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            box-shadow: 0 4px 20px rgba(0,255,136,0.3);
+        }
+        .toast.show { opacity: 1; transform: translateY(0); }
+        .toast.error { background: #ff4444; color: #fff; box-shadow: 0 4px 20px rgba(255,68,68,0.3); }
+
+        .tab-bar { display: flex; gap: 8px; margin-bottom: 16px; }
+        .tab-btn {
+            padding: 8px 16px;
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px;
+            color: #b0b8c4;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .tab-btn:hover, .tab-btn.active { background: rgba(0, 212, 255, 0.15); color: #00d4ff; border-color: #00d4ff; }
+
+        .upload-area {
+            border: 2px dashed rgba(0, 212, 255, 0.3);
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .upload-area:hover { border-color: #00d4ff; background: rgba(0, 212, 255, 0.05); }
+        .upload-area input[type="file"] { display: none; }
+
+        .media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-top: 20px; }
+        .media-card {
+            background: rgba(0, 40, 80, 0.5);
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid rgba(0, 212, 255, 0.15);
+            position: relative;
+        }
+        .media-card img, .media-card video { width: 100%; height: 140px; object-fit: cover; }
+        .media-card .media-name { padding: 10px; font-size: 12px; color: #b0b8c4; }
+        .media-card .media-actions { padding: 0 10px 10px; display: flex; gap: 6px; }
+        .media-card .media-url { font-size: 11px; color: #00d4ff; padding: 0 10px; word-break: break-all; }
+
+        /* ─── 可视化表单新样式 ─── */
+        .kv-row { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; max-width: 700px; }
+        .kv-row label { min-width: 100px; font-size: 12px; color: #b0b8c4; text-align: right; flex-shrink: 0; }
+        .kv-row input, .kv-row select { flex: 1; min-width: 0; }
+        .kv-row .kv-val { flex: 1; min-width: 0; }
+        .color-presets { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
+        .color-dot { width: 20px; height: 20px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: all 0.2s; }
+        .color-dot:hover, .color-dot.active { border-color: #fff; transform: scale(1.2); }
+        .array-section { margin-bottom: 10px; }
+        .array-item { background: rgba(0,20,40,0.5); border: 1px solid rgba(0,212,255,0.1); border-radius: 8px; padding: 12px; margin-bottom: 8px; position: relative; display: flex; flex-wrap: wrap; gap: 8px; }
+        .array-item .item-fields { flex: 1; min-width: 0; }
+        .array-item .item-actions { display: flex; gap: 4px; align-items: flex-start; padding-top: 2px; }
+        .btn-icon { width: 28px; height: 28px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.15); background: rgba(0,40,80,0.5); color: #b0b8c4; cursor: pointer; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; transition: transform 0.15s ease, border-color 0.15s ease, color 0.15s ease; }
+        .btn-icon:hover { border-color: #00d4ff; color: #00d4ff; }
+        .btn-icon:active { transform: scale(0.92); }
+        .btn-icon.danger:hover { border-color: #ff4444; color: #ff4444; }
+        .kv-row .mini-input { width: 60px; flex: none; padding: 6px 8px; background: rgba(0,40,80,0.5); border: 1px solid rgba(0,212,255,0.3); border-radius: 4px; color: #fff; font-size: 12px; text-align: center; }
+        .kv-row .mini-input:focus { border-color: #00d4ff; outline: none; box-shadow: 0 0 6px rgba(0,212,255,0.3); }
+
+        /* 登录页 */
+        #loginOverlay input:focus { outline: none; border-color: #00d4ff !important; box-shadow: 0 0 8px rgba(0,212,255,0.3); }
+
+        /* 用户管理表格 */
+        .user-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .user-table th, .user-table td { padding: 10px 14px; text-align: left; border-bottom: 1px solid rgba(0,212,255,0.1); font-size: 13px; }
+        .user-table th { color: #00d4ff; font-weight: normal; font-size: 12px; }
+        .user-table td .role-badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 11px; }
+        .role-admin { background: rgba(0,212,255,0.2); color: #00d4ff; }
+        .role-editor { background: rgba(0,255,136,0.15); color: #00ff88; }
+
+        /* Modal */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 9998; display: flex; align-items: center; justify-content: center; }
+        .modal-box { background: #0d2137; border: 1px solid rgba(0,212,255,0.2); border-radius: 12px; padding: 28px; width: 400px; max-width: 90vw; }
+        .modal-box h3 { color: #00d4ff; margin-bottom: 18px; }
+        .modal-box input { width: 100%; padding: 10px; margin-bottom: 14px; background: rgba(0,40,80,0.5); border: 1px solid rgba(0,212,255,0.3); border-radius: 6px; color: #fff; font-size: 13px; }
+        .modal-box input:focus { outline: none; border-color: #00d4ff; }
+        .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; }
+    </style>
+</head>
+<body>
+    <!-- 登录遮罩 -->
+    <div id="loginOverlay" style="position:fixed;inset:0;background:rgba(10,22,40,0.98);z-index:10000;display:flex;align-items:center;justify-content:center;">
+        <div style="background:rgba(0,40,80,0.6);border:1px solid rgba(0,212,255,0.2);border-radius:12px;padding:40px;width:380px;text-align:center;">
+            <div style="font-size:28px;color:#00d4ff;margin-bottom:8px;">🛡️ 综治中心管理后台</div>
+            <div style="font-size:13px;color:#666;margin-bottom:24px;">长白新村街道</div>
+            <div style="margin-bottom:16px;text-align:left;"><label style="font-size:12px;color:#b0b8c4;">用户名</label><input id="loginUser" type="text" placeholder="admin" style="width:100%;padding:10px;margin-top:6px;background:rgba(0,40,80,0.5);border:1px solid rgba(0,212,255,0.3);border-radius:6px;color:#fff;font-size:14px;"></div>
+            <div style="margin-bottom:20px;text-align:left;"><label style="font-size:12px;color:#b0b8c4;">密码</label><input id="loginPass" type="password" placeholder="········" style="width:100%;padding:10px;margin-top:6px;background:rgba(0,40,80,0.5);border:1px solid rgba(0,212,255,0.3);border-radius:6px;color:#fff;font-size:14px;"></div>
+            <button id="btnLogin" class="btn btn-primary" style="width:100%;padding:10px;font-size:14px;">🔐 登 录</button>
+            <div id="loginError" style="color:#ff4444;font-size:12px;margin-top:12px;display:none;"></div>
+        </div>
+    </div>
+    <div class="sidebar">
+        <div class="sidebar-title">综治中心管理后台<div class="sidebar-sub">长白新村街道</div></div>
+        <div class="nav-item active" data-page="overview">📊 综合态势</div>
+        <div class="nav-item" data-page="security">📹 安防监控</div>
+        <div class="nav-item" data-page="governance">🏛️ 社会综治</div>
+        <div class="nav-item" data-page="cockpit">🎯 决策驾驶舱</div>
+        <div class="nav-item" data-page="emergency">🚨 应急指挥</div>
+        <div class="nav-item" data-page="data-fusion">🔗 数据融合</div>
+        <div class="nav-item" data-page="media">🖼️ 媒体管理</div>
+        <div style="margin-top: auto; padding: 20px;">
+            <a href="/changbai/" target="_blank" class="btn" style="display:block;text-align:center;">👁️ 预览大屏</a>
+        </div>
+    </div>
+
+    <div class="main">
+        <div class="topbar">
+            <h2 id="pageTitle">综合态势配置</h2>
+            <div>
+                <span id="currentUserName" style="color:#00d4ff;margin-right:12px;font-size:13px;"></span>
+                <button class="btn btn-danger btn-sm" id="btnLogout" style="display:none;">🚪 退出</button>
+                <button class="btn" id="btnReset">🔄 重置为默认</button>
+                <button class="btn btn-primary" id="btnSave">💾 保存配置</button>
+            </div>
+        </div>
+        <div class="content" id="contentArea"></div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+
+        // ─── 认证状态 ───
+        let authToken = sessionStorage.getItem('changbai_token') || '';
+        let currentUser = null;
+
+        try { currentUser = JSON.parse(sessionStorage.getItem('changbai_user') || 'null'); } catch(e) {}
+
+        const pageTitles = {
+            'overview': '综合态势配置', 'security': '安防监控配置', 'governance': '社会综治配置',
+            'cockpit': '决策驾驶舱配置', 'emergency': '应急指挥配置', 'data-fusion': '数据融合配置',
+            'media': '媒体文件管理', 'users': '用户管理'
+        };
+
+        let currentPage = 'overview';
+        let currentData = null;
+        const COLOR_PRESETS = [
+            '#00d4ff','#00ff88','#ff9900','#ff4444','#ff66b2','#9966ff',
+            '#00bcd4','#4caf50','#ff9800','#f44336','#e91e63','#9c27b0',
+            '#2196f3','#8bc34a','#ffeb3b','#795548','#607d8b','#ffffff',
+        ];
+
+        function showToast(msg, isError) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.className = 'toast ' + (isError ? 'error' : '') + ' show';
+            setTimeout(() => t.classList.remove('show'), 2500);
+        }
+
+        function authFetch(url, opts = {}) {
+            const headers = { ...opts.headers };
+            if (authToken) headers['Authorization'] = 'Bearer ' + authToken;
+            return fetch(url, { ...opts, headers });
+        }
+
+        // ─── 登录 ───
+        async function doLogin() {
+            const username = document.getElementById('loginUser').value.trim();
+            const password = document.getElementById('loginPass').value.trim();
+            if (!username || !password) return showError('请输入用户名和密码');
+            try {
+                const resp = await fetch('/changbai/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const json = await resp.json();
+                if (json.success) {
+                    authToken = json.token;
+                    currentUser = json.user;
+                    sessionStorage.setItem('changbai_token', authToken);
+                    sessionStorage.setItem('changbai_user', JSON.stringify(currentUser));
+                    document.getElementById('loginOverlay').style.display = 'none';
+                    document.getElementById('loginError').style.display = 'none';
+                    document.getElementById('currentUserName').textContent = '👤 ' + currentUser.username + (currentUser.role === 'admin' ? ' (管理员)' : '');
+                    document.getElementById('btnLogout').style.display = 'inline-block';
+                    if (currentUser.role !== 'admin') {
+                        // 非管理员隐藏用户管理入口
+                        const userNav = document.querySelector('.nav-item[data-page="users"]');
+                        if (userNav) userNav.style.display = 'none';
+                    }
+                    loadPage('overview');
+                } else {
+                    showError(json.error || '登录失败');
+                }
+            } catch(err) { showError('网络错误: ' + err.message); }
+        }
+
+        function showError(msg) {
+            const el = document.getElementById('loginError');
+            el.textContent = msg;
+            el.style.display = 'block';
+        }
+
+        function doLogout() {
+            authToken = '';
+            currentUser = null;
+            sessionStorage.removeItem('changbai_token');
+            sessionStorage.removeItem('changbai_user');
+            document.getElementById('loginOverlay').style.display = 'flex';
+            document.getElementById('currentUserName').textContent = '';
+            document.getElementById('btnLogout').style.display = 'none';
+            document.getElementById('loginUser').value = '';
+            document.getElementById('loginPass').value = '';
+            document.getElementById('contentArea').innerHTML = '';
+        }
+
+        // 登录按钮
+        document.getElementById('btnLogin').addEventListener('click', doLogin);
+        document.getElementById('loginPass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+        document.getElementById('btnLogout').addEventListener('click', doLogout);
+
+        // 验证 token 有效性
+        async function checkAuth() {
+            if (!authToken) { showLogin(); return false; }
+            try {
+                const resp = await authFetch('/changbai/api/auth/me');
+                if (resp.status === 401) { showLogin(); return false; }
+                const json = await resp.json();
+                if (json.success) {
+                    currentUser = json.user;
+                    document.getElementById('currentUserName').textContent = '👤 ' + currentUser.username + (currentUser.role === 'admin' ? ' (管理员)' : '');
+                    document.getElementById('btnLogout').style.display = 'inline-block';
+                    if (currentUser.role !== 'admin') {
+                        const userNav = document.querySelector('.nav-item[data-page="users"]');
+                        if (userNav) userNav.style.display = 'none';
+                    }
+                    hideLogin();
+                    return true;
+                }
+            } catch(e) {}
+            showLogin();
+            return false;
+        }
+
+        function showLogin() {
+            document.getElementById('loginOverlay').style.display = 'flex';
+            document.getElementById('contentArea').innerHTML = '';
+        }
+
+        function hideLogin() {
+            document.getElementById('loginOverlay').style.display = 'none';
+        }
+
+        // ─── 导航 ───
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', async () => {
+                document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+                item.classList.add('active');
+                currentPage = item.dataset.page;
+                document.getElementById('pageTitle').textContent = pageTitles[currentPage] || '';
+                await loadPage(currentPage);
+            });
+        });
+
+        // ─── 保存 ───
+        document.getElementById('btnSave').addEventListener('click', async () => {
+            if (currentPage === 'media' || currentPage === 'users') return;
+            try {
+                const resp = await authFetch('/changbai/api/admin/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ page: currentPage, data: currentData })
+                });
+                if (resp.status === 401) { showLogin(); return; }
+                const json = await resp.json();
+                showToast(json.success ? '✅ ' + json.message : '❌ 保存失败: ' + json.error, !json.success);
+            } catch(err) { showToast('❌ 保存失败: ' + err.message, true); }
+        });
+
+        // ─── 重置 ───
+        document.getElementById('btnReset').addEventListener('click', () => {
+            if (currentPage === 'media' || currentPage === 'users') return;
+            if (confirm('确定要重置「' + (pageTitles[currentPage] || '当前页面') + '」的数据吗？此操作不可撤销。')) loadPage(currentPage);
+        });
+
+        async function loadPage(page) {
+            if (page === 'media') { renderMediaPage(); return; }
+            if (page === 'users') { renderUsersPage(); return; }
+            try {
+                const resp = await authFetch('/changbai/api/dashboard/' + page);
+                if (resp.status === 401) { showLogin(); return; }
+                const json = await resp.json();
+                currentData = json.success ? JSON.parse(JSON.stringify(json.data)) : {};
+                renderForm();
+            } catch(err) { showToast('加载失败: ' + err.message, true); }
+        }
+
+        // ─── 字段名 → 中文名映射 ───
+        const FIELD_ZH = {
+            // 一级栏目
+            'stats': '统计指标',
+            'street_info': '街道信息',
+            'device_status': '设备状态',
+            'map_markers': '地图标记',
+            'security_overview': '安全概览',
+            'events': '事件列表',
+            'security_index_chart': '安全指数图表',
+            'alert_chart': '告警趋势图',
+            'face_chart': '人脸识别统计',
+            'cameras': '监控列表',
+            'recent_captures': '抓拍记录',
+            'xueliang_status': '雪亮工程',
+            'device_stats': '设备统计',
+            'business_9x': '9+X业务',
+            'key_people': '重点人员',
+            'workflow': '工作流程',
+            'grid_distribution': '网格分布',
+            'governance_resources': '治理资源',
+            'dispute_table': '纠纷列表',
+            'dispute_chart': '纠纷趋势图',
+            'scores': '评分指标',
+            'trend_chart': '趋势图',
+            'population': '人口统计',
+            'pie_charts': '饼图',
+            'radar_chart': '雷达图',
+            'community_rankings': '社区排名',
+            'runtime_metrics': '运行指标',
+            'risk_warnings': '风险预警',
+            'alert_levels': '预警等级',
+            'alert_events': '预警事件',
+            'resources': '应急资源',
+            'dispatch_teams': '调度队伍',
+            'comm_records': '通讯记录',
+            'data_sources': '数据源',
+            'data_gather_chart': '数据采集图',
+            'data_quality_chart': '数据质量图',
+            // 二级字段
+            'value': '数值',
+            'label': '名称',
+            'icon': '图标',
+            'trend_type': '趋势方向',
+            'trend_text': '趋势文字',
+            'animate': '动画效果',
+            'name': '名称',
+            'code': '编码',
+            'details': '详情列表',
+            'count': '数量',
+            'color': '颜色',
+            'status': '状态',
+            'status_color': '状态颜色',
+            'status_text': '状态文本',
+            'type': '类型',
+            'title': '标题',
+            'desc': '描述',
+            'time': '时间',
+            'top': '上边距(%)',
+            'left': '左边距(%)',
+            'lat': '纬度',
+            'lng': '经度',
+            'media_type': '媒体类型',
+            'img': '图片URL',
+            'id': '编号',
+            'location': '位置',
+            'text': '文本',
+            'level': '等级',
+            'active': '是否激活',
+            'url': '链接',
+            'map_image': '地图图片',
+            'map_center': '地图中心',
+            'map_zoom': '地图缩放',
+            'map_type': '地图类型',
+            'dataset': '数据集',
+            'data': '数据',
+            'labels': '标签列表',
+            'colors': '颜色列表',
+            'datasets': '数据集',
+            'score': '分数',
+            'total': '总数',
+            'online': '在线数',
+            'alert': '告警数',
+            'online_rate': '在线率',
+            'chart_data': '图表数据',
+        };
+
+        function zhFieldName(key) {
+            if (FIELD_ZH[key]) return FIELD_ZH[key];
+            // 兜底：驼峰/下划线转中文
+            return key.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').replace(/^./, c => c.toUpperCase()).trim();
+        }
+
+        // ─── 当前栏目缓存（用于独立保存） ───
+        let currentPageData = null;
+
+        async function saveSection(page, data) {
+            try {
+                const resp = await authFetch('/changbai/api/admin/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ page, data })
+                });
+                if (resp.status === 401) { showLogin(); return false; }
+                const json = await resp.json();
+                return json.success;
+            } catch(err) { return false; }
+        }
+
+        // ─── 输入控件 ───
+        function mkRow(labelText, ...children) {
+            const row = document.createElement('div');
+            row.className = 'kv-row';
+            const lbl = document.createElement('label');
+            lbl.textContent = labelText;
+            row.append(lbl, ...children);
+            return row;
+        }
+
+        function mkInput(type, value) {
+            const inp = document.createElement('input');
+            inp.type = type;
+            inp.value = value !== null && value !== undefined ? String(value) : '';
+            inp.style.cssText = 'padding:6px 10px;background:rgba(0,40,80,0.5);border:1px solid rgba(0,212,255,0.3);border-radius:4px;color:#fff;font-size:12px;flex:1;min-width:0;max-width:400px;';
+            inp.addEventListener('focus', () => { inp.style.borderColor = '#00d4ff'; inp.style.boxShadow = '0 0 6px rgba(0,212,255,0.3)'; });
+            inp.addEventListener('blur', () => { inp.style.borderColor = 'rgba(0,212,255,0.3)'; inp.style.boxShadow = 'none'; });
+            return inp;
+        }
+
+        function mkSelect(optionsKV, value) {
+            const sel = document.createElement('select');
+            sel.style.cssText = 'padding:6px 10px;background:rgba(0,40,80,0.5);border:1px solid rgba(0,212,255,0.3);border-radius:4px;color:#fff;font-size:12px;flex:1;min-width:0;max-width:400px;';
+            optionsKV.forEach(([k, v]) => {
+                const opt = document.createElement('option');
+                opt.value = k; opt.textContent = v;
+                if (k === String(value)) opt.selected = true;
+                sel.append(opt);
+            });
+            return sel;
+        }
+
+        function mkColorPicker(initial) {
+            const wrap = document.createElement('div');
+            wrap.style.cssText = 'flex:1;max-width:400px;';
+            const row = document.createElement('div');
+            row.style.cssText = 'display:flex;gap:6px;align-items:center;';
+            const swatch = document.createElement('span');
+            swatch.style.cssText = 'width:24px;height:24px;border-radius:4px;background:' + (initial || '#ccc') + ';flex-shrink:0;';
+            const inp = mkInput('text', initial);
+            inp.oninput = () => { swatch.style.background = inp.value; };
+            row.append(swatch, inp);
+            wrap.append(row);
+            const presets = document.createElement('div');
+            presets.className = 'color-presets';
+            COLOR_PRESETS.forEach(c => {
+                const dot = document.createElement('span');
+                dot.className = 'color-dot' + (c === initial ? ' active' : '');
+                dot.style.background = c;
+                dot.onclick = () => { inp.value = c; swatch.style.background = c; inp.dispatchEvent(new Event('input')); };
+                presets.append(dot);
+            });
+            wrap.append(presets);
+            wrap.getColor = () => inp.value;
+            return wrap;
+        }
+
+        // ─── 表单渲染 ───
+        function buildCard(title, key, fn) {
+            const card = document.createElement('div');
+            card.className = 'section-card';
+            const header = document.createElement('div');
+            header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid rgba(0,212,255,0.15);';
+            const h3 = document.createElement('h3');
+            h3.textContent = title;
+            h3.style.cssText = 'font-size:15px;color:#00d4ff;margin:0;';
+            header.append(h3);
+            // 为有 key 的卡片添加保存按钮（排除根级别）
+            if (key && currentPage && currentData) {
+                const saveBtn = document.createElement('button');
+                saveBtn.className = 'section-save-btn';
+                saveBtn.textContent = '💾 保存';
+                saveBtn.onclick = async function() {
+                    saveBtn.textContent = '⏳ 保存中...';
+                    saveBtn.disabled = true;
+                    const ok = await saveSection(currentPage, currentData);
+                    if (ok) {
+                        saveBtn.className = 'section-save-btn saved';
+                        saveBtn.textContent = '✅ 已保存';
+                        showToast('✅ ' + title + ' 保存成功');
+                    } else {
+                        saveBtn.textContent = '💾 保存';
+                        saveBtn.disabled = false;
+                        showToast('❌ 保存失败', true);
+                    }
+                    setTimeout(() => {
+                        saveBtn.className = 'section-save-btn';
+                        saveBtn.textContent = '💾 保存';
+                        saveBtn.disabled = false;
+                    }, 2000);
+                };
+                header.append(saveBtn);
+            }
+            card.append(header);
+            fn(card);
+            return card;
+        }
+
+        function buildFields(obj, rootObj, container) {
+            Object.keys(obj).forEach(k => {
+                const val = obj[k];
+                const labelText = zhFieldName(k);
+
+                if (Array.isArray(val)) {
+                    const card = document.createElement('div');
+                    card.className = 'section-card';
+                    const headRow = document.createElement('div');
+                    headRow.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid rgba(0,212,255,0.15);';
+                    const titleWrap = document.createElement('div');
+                    titleWrap.style.cssText = 'display:flex;align-items:center;gap:8px;';
+                    const h3 = document.createElement('h3');
+                    h3.textContent = labelText + ' (' + val.length + ')';
+                    h3.style.cssText = 'font-size:15px;color:#00d4ff;margin:0;';
+                    titleWrap.append(h3);
+                    const btnWrap = document.createElement('div');
+                    btnWrap.style.cssText = 'display:flex;gap:6px;';
+                    const addBtn = document.createElement('button');
+                    addBtn.className = 'btn btn-sm';
+                    addBtn.textContent = '+ 添加';
+                    btnWrap.append(addBtn);
+                    const saveBtn = document.createElement('button');
+                    saveBtn.className = 'section-save-btn';
+                    saveBtn.style.cssText = 'position:static;';
+                    saveBtn.textContent = '💾 保存';
+                    saveBtn.onclick = async function() {
+                        saveBtn.textContent = '⏳ 保存中...';
+                        saveBtn.disabled = true;
+                        const ok = await saveSection(currentPage, currentData);
+                        if (ok) {
+                            saveBtn.className = 'section-save-btn saved';
+                            saveBtn.style.cssText = 'position:static;background:#00ff88;';
+                            saveBtn.textContent = '✅ 已保存';
+                            showToast('✅ ' + labelText + ' 保存成功');
+                        } else {
+                            saveBtn.textContent = '💾 保存';
+                            saveBtn.disabled = false;
+                            showToast('❌ 保存失败', true);
+                        }
+                        setTimeout(() => {
+                            saveBtn.className = 'section-save-btn';
+                            saveBtn.style.cssText = 'position:static;';
+                            saveBtn.textContent = '💾 保存';
+                            saveBtn.disabled = false;
+                        }, 2000);
+                    };
+                    btnWrap.append(saveBtn);
+                    headRow.append(titleWrap, btnWrap);
+                    const items = document.createElement('div');
+                    card.append(headRow, items);
+
+                    function renderItems() {
+                        items.innerHTML = '';
+                        val.forEach((item, idx) => {
+                            const wrap = document.createElement('div');
+                            wrap.className = 'array-item';
+                            const fields = document.createElement('div');
+                            fields.className = 'item-fields';
+                            if (typeof item === 'object' && item !== null) {
+                                Object.keys(item).forEach(subK => {
+                                    const subVal = item[subK];
+                                    const subLbl = document.createElement('label');
+                                    subLbl.style.cssText = 'font-size:11px;color:#888;display:block;margin-bottom:2px;';
+                                    subLbl.textContent = zhFieldName(subK);
+                                    fields.append(subLbl);
+                                    const fRow = document.createElement('div');
+                                    fRow.style.cssText = 'display:flex;gap:6px;margin-bottom:6px;';
+                                    if (subK === 'color' || subK === 'status_color') {
+                                        const cp = mkColorPicker(subVal);
+                                        cp.querySelector('input').oninput = () => { item[subK] = cp.getColor(); };
+                                        fRow.append(cp);
+                                    } else if (typeof subVal === 'number') {
+                                        const inp = mkInput('number', subVal);
+                                        inp.onchange = () => { item[subK] = parseFloat(inp.value) || 0; };
+                                        fRow.append(inp);
+                                    } else if (typeof subVal === 'boolean') {
+                                        const sel = mkSelect([['true','是'],['false','否']], subVal);
+                                        sel.onchange = () => { item[subK] = sel.value === 'true'; };
+                                        fRow.append(sel);
+                                    } else if (subK === 'media_type') {
+                                        const sel = mkSelect([['image','图片'],['video','视频'],['rtsp','RTSP流']], subVal);
+                                        sel.onchange = () => { item[subK] = sel.value; };
+                                        fRow.append(sel);
+                                    } else if (subK === 'status') {
+                                        const sel = mkSelect([['online','在线'],['offline','离线'],['alert','告警'],['connecting','接入中'],['warning','预警'],['待命','待命'],['处理中','处理中'],['待处理','待处理'],['已处置','已处置']], subVal);
+                                        sel.onchange = () => { item[subK] = sel.value; };
+                                        fRow.append(sel);
+                                    } else if (subK === 'type') {
+                                        const sel = mkSelect([['alert','告警'],['warning','预警'],['normal','正常'],['command','指挥中心'],['resource','资源'],['info','信息'],['event','事件']], subVal);
+                                        sel.onchange = () => { item[subK] = sel.value; };
+                                        fRow.append(sel);
+                                    } else if (subK === 'trend_type') {
+                                        const sel = mkSelect([['up','上升'],['down','下降'],['stable','平稳']], subVal);
+                                        sel.onchange = () => { item[subK] = sel.value; };
+                                        fRow.append(sel);
+                                    } else if (subK === 'animate') {
+                                        const sel = mkSelect([['true','是'],['false','否']], subVal);
+                                        sel.onchange = () => { item[subK] = sel.value === 'true'; };
+                                        fRow.append(sel);
+                                    } else {
+                                        const inp = mkInput('text', subVal);
+                                        inp.onchange = () => { item[subK] = inp.value; };
+                                        fRow.append(inp);
+                                    }
+                                    fields.append(fRow);
+                                });
+                            } else {
+                                const inp = mkInput('text', String(val[idx]));
+                                inp.onchange = () => { val[idx] = inp.value; };
+                                fields.append(inp);
+                            }
+                            const actions = document.createElement('div');
+                            actions.className = 'item-actions';
+                            const delBtn = document.createElement('button');
+                            delBtn.className = 'btn-icon danger';
+                            delBtn.textContent = '✕';
+                            delBtn.onclick = () => { val.splice(idx, 1); renderItems(); };
+                            actions.append(delBtn);
+                            wrap.append(fields, actions);
+                            items.append(wrap);
+                        });
+                    }
+                    addBtn.onclick = () => {
+                        const first = val[0];
+                        if (typeof first === 'object' && first !== null) {
+                            const clone = {};
+                            Object.keys(first).forEach(kk => {
+                                clone[kk] = typeof first[kk] === 'number' ? 0 :
+                                    typeof first[kk] === 'boolean' ? false : '';
+                            });
+                            val.push(clone);
+                        } else val.push('');
+                        renderItems();
+                    };
+                    renderItems();
+                    container.append(card);
+                    return;
+                }
+
+                if (typeof val === 'object' && val !== null) {
+                    if (k.endsWith('_chart') || k === 'datasets' || k === 'pie_charts') {
+                        const card = buildCard(labelText, k, c => {
+                            Object.keys(val).forEach(subK => {
+                                const subVal = val[subK];
+                                if (Array.isArray(subVal)) {
+                                    const r = mkRow(zhFieldName(subK));
+                                    const inp = mkInput('text', JSON.stringify(subVal));
+                                    inp.style.fontFamily = 'monospace';
+                                    inp.style.fontSize = '11px';
+                                    inp.onchange = () => { try { val[subK] = JSON.parse(inp.value); } catch(e) {} };
+                                    r.append(inp);
+                                    c.append(r);
+                                } else if (typeof subVal === 'object' && subVal !== null) {
+                                    buildFields(subVal, val, c);
+                                } else {
+                                    const r = mkRow(zhFieldName(subK));
+                                    const inp = mkInput(typeof subVal === 'number' ? 'number' : 'text', subVal);
+                                    inp.onchange = () => {
+                                        val[subK] = typeof subVal === 'number' ? (parseFloat(inp.value) || 0) : inp.value;
+                                    };
+                                    r.append(inp);
+                                    c.append(r);
+                                }
+                            });
+                        });
+                        container.append(card);
+                    } else {
+                        const card = buildCard(labelText, k, c => { buildFields(val, obj, c); });
+                        container.append(card);
+                    }
+                    return;
+                }
+
+                let inputEl;
+                if (k.endsWith('color') || k === 'status_color') {
+                    inputEl = mkColorPicker(val);
+                    const row = mkRow(labelText, inputEl);
+                    container.append(row);
+                    return;
+                } else if (typeof val === 'number') {
+                    inputEl = mkInput('number', val);
+                    inputEl.onchange = () => { obj[k] = parseFloat(inputEl.value) || 0; };
+                } else if (typeof val === 'boolean') {
+                    inputEl = mkSelect([['true','是'],['false','否']], val);
+                    inputEl.onchange = () => { obj[k] = inputEl.value === 'true'; };
+                } else {
+                    inputEl = mkInput('text', val);
+                    inputEl.onchange = () => { obj[k] = inputEl.value; };
+                }
+                const row = mkRow(labelText, inputEl);
+                container.append(row);
+            });
+        }
+
+        function renderForm() {
+            if (!currentData) return;
+            const container = document.getElementById('contentArea');
+            container.innerHTML = '';
+            buildFields(currentData, currentData, container);
+        }
+
+        // ─── 媒体管理 ───
+        async function renderMediaPage() {
+            const container = document.getElementById('contentArea');
+            container.innerHTML = '<div class="upload-area" id="uploadArea">' +
+                '<div style="font-size:36px;">📁</div><div style="margin:10px 0;color:#00d4ff;">点击或拖拽上传监控画面</div>' +
+                '<div style="font-size:12px;color:#666;">支持 JPG/PNG/GIF/WebP/MP4/WEBM，最大 100MB</div>' +
+                '<input type="file" id="fileInput" accept="image/*,video/*" multiple></div>' +
+                '<div class="media-grid" id="mediaGrid"></div>';
+            document.getElementById('uploadArea').addEventListener('click', () => { document.getElementById('fileInput').click(); });
+            document.getElementById('fileInput').addEventListener('change', async e => {
+                for (const file of e.target.files) {
+                    const fd = new FormData(); fd.append('file', file);
+                    try {
+                        const resp = await authFetch('/changbai/api/admin/upload-media', { method: 'POST', body: fd });
+                        if (resp.status === 401) { showLogin(); return; }
+                        const json = await resp.json();
+                        showToast(json.success ? '✅ 上传成功: ' + file.name : '❌ 上传失败: ' + json.error, !json.success);
+                    } catch(err) { showToast('❌ 上传失败', true); }
+                }
+                loadMediaList();
+            });
+            loadMediaList();
+        }
+
+        async function loadMediaList() {
+            const grid = document.getElementById('mediaGrid'); if (!grid) return;
+            try {
+                const resp = await authFetch('/changbai/api/admin/media-list');
+                if (resp.status === 401) { showLogin(); return; }
+                const json = await resp.json();
+                if (!json.success) return;
+                grid.innerHTML = json.files.map(f => {
+                    const isVideo = /\.(mp4|webm)$/i.test(f.name);
+                    const m = isVideo ? '<video src="' + f.url + '" style="width:100%;height:140px;object-fit:cover;"></video>'
+                        : '<img src="' + f.url + '" style="width:100%;height:140px;object-fit:cover;">';
+                    return '<div class="media-card">' + m +
+                        '<div class="media-url" onclick="navigator.clipboard.writeText(\'' + f.url + '\')" title="点击复制URL">' + f.url + '</div>' +
+                        '<div class="media-name">' + f.name + '</div>' +
+                        '<div class="media-actions"><button class="btn btn-sm" onclick="navigator.clipboard.writeText(\'' + f.url + '\')">📋 复制URL</button>' +
+                        (currentUser && currentUser.role === 'admin' ? '<button class="btn btn-sm btn-danger" onclick="deleteMedia(\'' + f.name + '\')">🗑 删除</button>' : '') +
+                        '</div></div>';
+                }).join('');
+                if (json.files.length === 0) grid.innerHTML = '<div style="text-align:center;color:#666;padding:40px;">暂无媒体文件</div>';
+            } catch(err) {}
+        }
+
+        async function deleteMedia(filename) {
+            if (!confirm('确定删除 ' + filename + '？')) return;
+            try {
+                const resp = await authFetch('/changbai/api/admin/media/' + filename, { method: 'DELETE' });
+                if (resp.status === 401) { showLogin(); return; }
+                showToast('✅ 已删除');
+                loadMediaList();
+            } catch(err) { showToast('❌ 删除失败', true); }
+        }
+
+        // ─── 用户管理 ───
+        async function renderUsersPage() {
+            if (!currentUser || currentUser.role !== 'admin') {
+                document.getElementById('contentArea').innerHTML = '<div style="text-align:center;color:#666;padding:60px;">⛔ 需要管理员权限</div>';
+                return;
+            }
+            document.getElementById('btnSave').style.display = 'none';
+            document.getElementById('btnReset').style.display = 'none';
+            const container = document.getElementById('contentArea');
+            container.innerHTML = '<div class="section-card"><h3>用户列表</h3>' +
+                '<div style="margin-bottom:12px;"><button class="btn btn-primary btn-sm" id="btnAddUser">+ 新增用户</button></div>' +
+                '<div id="userTableWrap"></div></div>';
+            document.getElementById('btnAddUser').addEventListener('click', showAddUserModal);
+            await refreshUserTable();
+        }
+
+        async function refreshUserTable() {
+            const wrap = document.getElementById('userTableWrap'); if (!wrap) return;
+            try {
+                const resp = await authFetch('/changbai/api/admin/users');
+                const json = await resp.json();
+                if (!json.success) { wrap.innerHTML = '<div style="color:#666;padding:20px;">加载失败</div>'; return; }
+                if (json.users.length === 0) {
+                    wrap.innerHTML = '<div style="text-align:center;color:#666;padding:30px;">暂无用户</div>';
+                    return;
+                }
+                wrap.innerHTML = '<table class="user-table"><thead><tr><th>用户名</th><th>角色</th><th>创建时间</th><th>操作</th></tr></thead><tbody>' +
+                    json.users.map(u => '<tr><td>' + u.username + '</td><td><span class="role-badge role-' + u.role + '">' +
+                        (u.role === 'admin' ? '管理员' : '编辑者') +
+                        '</span></td><td style="font-size:12px;color:#888;">' + (u.createdAt ? u.createdAt.slice(0,10) : '') +
+                        '</td><td>' +
+                        (u.id !== 'admin' ? '<button class="btn btn-sm" onclick="showResetPwdModal(\'' + u.id + '\',\'' + u.username + '\')">🔑 改密</button>' +
+                            '<button class="btn btn-sm btn-danger" style="margin-left:6px;" onclick="delUser(\'' + u.id + '\',\'' + u.username + '\')">🗑 删除</button>'
+                            : '<span style="color:#666;font-size:12px;">内置</span>') +
+                        '</td></tr>').join('') +
+                    '</tbody></table>';
+            } catch(err) { wrap.innerHTML = '<div style="color:#666;padding:20px;">加载失败</div>'; }
+        }
+
+        function showAddUserModal() {
+            const overlay = document.createElement('div');
+            overlay.className = 'modal-overlay';
+            overlay.innerHTML = '<div class="modal-box"><h3>新增用户</h3>' +
+                '<input id="newUsername" placeholder="用户名"><input id="newPassword" type="password" placeholder="密码">' +
+                '<select id="newRole" style="width:100%;padding:10px;margin-bottom:14px;background:rgba(0,40,80,0.5);border:1px solid rgba(0,212,255,0.3);border-radius:6px;color:#fff;font-size:13px;">' +
+                '<option value="editor">编辑者</option><option value="admin">管理员</option></select>' +
+                '<div class="modal-actions"><button class="btn" id="btnCancelAdd">取消</button>' +
+                '<button class="btn btn-primary" id="btnConfirmAdd">确定</button></div></div>';
+            document.body.append(overlay);
+            document.getElementById('btnCancelAdd').onclick = () => overlay.remove();
+            overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+            document.getElementById('btnConfirmAdd').onclick = async () => {
+                const username = document.getElementById('newUsername').value.trim();
+                const password = document.getElementById('newPassword').value.trim();
+                const role = document.getElementById('newRole').value;
+                if (!username || !password) return showToast('用户名和密码不能为空', true);
+                try {
+                    const resp = await authFetch('/changbai/api/admin/users', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username, password, role })
+                    });
+                    const json = await resp.json();
+                    showToast(json.success ? '✅ ' + json.message || '用户已创建' : '❌ ' + json.error, !json.success);
+                    if (json.success) { overlay.remove(); refreshUserTable(); }
+                } catch(err) { showToast('❌ 操作失败', true); }
+            };
+        }
+
+        function showResetPwdModal(id, username) {
+            const overlay = document.createElement('div');
+            overlay.className = 'modal-overlay';
+            overlay.innerHTML = '<div class="modal-box"><h3>修改密码 - ' + username + '</h3>' +
+                '<input id="resetPwd" type="password" placeholder="新密码">' +
+                '<div class="modal-actions"><button class="btn" id="btnCancelPwd">取消</button>' +
+                '<button class="btn btn-primary" id="btnConfirmPwd">确定</button></div></div>';
+            document.body.append(overlay);
+            document.getElementById('btnCancelPwd').onclick = () => overlay.remove();
+            overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+            document.getElementById('btnConfirmPwd').onclick = async () => {
+                const password = document.getElementById('resetPwd').value.trim();
+                if (!password) return showToast('密码不能为空', true);
+                try {
+                    const resp = await authFetch('/changbai/api/admin/users/' + id + '/password', {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ password })
+                    });
+                    const json = await resp.json();
+                    showToast(json.success ? '✅ 密码已更新' : '❌ ' + json.error, !json.success);
+                    if (json.success) overlay.remove();
+                } catch(err) { showToast('❌ 操作失败', true); }
+            };
+        }
+
+        async function delUser(id, username) {
+            if (!confirm('确定删除用户 "' + username + '"？此操作不可撤销。')) return;
+            try {
+                const resp = await authFetch('/changbai/api/admin/users/' + id, { method: 'DELETE' });
+                const json = await resp.json();
+                showToast(json.success ? '✅ 已删除' : '❌ ' + json.error, !json.success);
+                refreshUserTable();
+            } catch(err) { showToast('❌ 操作失败', true); }
+        }
+
+        // ─── 初始化 ───
+        (async function init() {
+            if (await checkAuth()) {
+                document.getElementById('btnSave').style.display = '';
+                document.getElementById('btnReset').style.display = '';
+                currentPage = 'overview';
+                loadPage('overview');
+            } else {
+                document.getElementById('btnSave').style.display = 'none';
+                document.getElementById('btnReset').style.display = 'none';
+            }
+        })();
+
+        // Ctrl+S 快捷保存
+        document.addEventListener('keydown', e => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                document.getElementById('btnSave').click();
+            }
+        });
+    </script>
+</body>
+</html>

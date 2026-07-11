@@ -1,0 +1,4307 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, height=1080">
+    <title>长白街道综治中心指挥平台</title>
+    <link rel="stylesheet" href="/changbai/lib/leaflet.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/changbai/lib/leaflet.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary-blue: #0066cc;
+            --dark-blue: #001a33;
+            --medium-blue: #003366;
+            --light-blue: #4d94ff;
+            --accent-cyan: #00d4ff;
+            --accent-green: #00ff88;
+            --accent-orange: #ff9900;
+            --accent-red: #ff4444;
+            --text-white: #ffffff;
+            --text-gray: #b0b8c4;
+            --bg-dark: #0a1628;
+            --bg-card: rgba(0, 40, 80, 0.6);
+        }
+
+        body {
+            font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+            background: linear-gradient(135deg, var(--dark-blue) 0%, var(--bg-dark) 100%);
+            color: var(--text-white);
+            width: 1920px;
+            height: 1080px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .bg-pattern {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 20% 80%, rgba(0, 102, 204, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 20%, rgba(0, 212, 255, 0.08) 0%, transparent 50%),
+                        linear-gradient(180deg, rgba(0, 26, 51, 0.9) 0%, rgba(10, 22, 40, 0.95) 100%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .header {
+            height: 80px;
+            background: linear-gradient(180deg, rgba(0, 40, 80, 0.95) 0%, rgba(0, 26, 51, 0.9) 100%);
+            border-bottom: 2px solid var(--accent-cyan);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 30px;
+            position: relative;
+            z-index: 100;
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
+            animation: headerGlow 3s ease-in-out infinite;
+        }
+
+        @keyframes headerGlow {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        .header-left { display: flex; align-items: center; gap: 20px; }
+        .logo-area { display: flex; align-items: center; gap: 15px; }
+
+        .logo-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--primary-blue));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
+        }
+
+        .logo-text {
+            font-size: 26px;
+            font-weight: bold;
+            background: linear-gradient(90deg, var(--text-white), var(--accent-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 3px;
+        }
+
+        .platform-subtitle { font-size: 14px; color: var(--text-gray); letter-spacing: 2px; margin-top: 2px; }
+
+        .header-center { display: flex; gap: 5px; }
+
+        .nav-btn {
+            padding: 12px 28px;
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-gray);
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-btn:hover { color: var(--text-white); background: rgba(0, 212, 255, 0.1); }
+
+        .nav-btn.active {
+            color: var(--accent-cyan);
+            background: rgba(0, 212, 255, 0.15);
+            border-color: var(--accent-cyan);
+        }
+
+        .nav-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60%;
+            height: 2px;
+            background: var(--accent-cyan);
+            border-radius: 2px;
+        }
+
+        .header-right { display: flex; align-items: center; gap: 20px; }
+        .time-display { text-align: right; }
+        .time-main { font-size: 28px; font-weight: bold; color: var(--text-white); }
+        .time-date { font-size: 13px; color: var(--text-gray); }
+
+        .weather-widget {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 15px;
+            background: rgba(0, 102, 204, 0.2);
+            border-radius: 8px;
+            border: 1px solid rgba(0, 212, 255, 0.2);
+        }
+
+        .weather-icon { font-size: 28px; }
+        .weather-info { font-size: 13px; }
+        .weather-temp { font-size: 18px; font-weight: bold; }
+
+        .main-content {
+            height: calc(100vh - 80px);
+            padding: 15px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .overview-layout, .security-layout, .governance-layout, .cockpit-layout, .digital-twin-layout, .emergency-layout, .data-layout {
+            display: none;
+            height: 100%;
+            gap: 15px;
+        }
+
+        .overview-layout.active, .security-layout.active, .governance-layout.active, .cockpit-layout.active, .digital-twin-layout.active, .emergency-layout.active, .data-layout.active {
+            display: flex;
+        }
+
+        .overview-left, .overview-right, .security-left, .security-right, .governance-left, .governance-right, .cockpit-left, .cockpit-right, .emergency-left, .emergency-right {
+            width: 320px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .security-left, .security-right, .cockpit-left, .cockpit-right, .emergency-left, .emergency-right { width: 380px; }
+        .governance-left, .governance-right { width: 350px; }
+
+        .overview-center, .security-center, .governance-center, .cockpit-center, .digital-twin-center, .emergency-center {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-cyan), var(--primary-blue));
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: var(--accent-cyan);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-title::before {
+            content: '';
+            width: 4px;
+            height: 16px;
+            background: var(--accent-cyan);
+            border-radius: 2px;
+        }
+
+        .card-tools { display: flex; gap: 8px; }
+
+        .tool-btn {
+            width: 28px;
+            height: 28px;
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 5px;
+            color: var(--accent-cyan);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+
+        .tool-btn:hover { background: rgba(0, 212, 255, 0.3); }
+
+        .stat-card { padding: 20px; }
+        .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
+
+        .stat-item {
+            text-align: center;
+            padding: 15px 10px;
+            background: rgba(0, 40, 80, 0.5);
+            border-radius: 8px;
+            border: 1px solid rgba(0, 212, 255, 0.15);
+            transition: all 0.3s;
+        }
+
+        .stat-item:hover { border-color: var(--accent-cyan); transform: translateY(-2px); }
+        .stat-icon { font-size: 28px; margin-bottom: 8px; }
+        .stat-value { font-size: 32px; font-weight: bold; color: var(--text-white); line-height: 1; }
+        .stat-label { font-size: 13px; color: var(--text-gray); margin-top: 5px; }
+        .stat-trend { font-size: 12px; margin-top: 5px; display: flex; align-items: center; justify-content: center; gap: 3px; }
+        .trend-up { color: var(--accent-green); }
+        .trend-down { color: var(--accent-red); }
+
+        .map-container { flex: 1; min-height: 400px; position: relative; }
+
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            height: 100%;
+        }
+
+        .video-item {
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            aspect-ratio: 4/3;
+        }
+
+        .video-placeholder {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .video-placeholder img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .video-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 8px 12px;
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .video-name {
+            font-size: 12px;
+            color: var(--text-white);
+        }
+
+        .video-status {
+            font-size: 11px;
+            color: var(--accent-green);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--accent-green);
+            border-radius: 50%;
+            animation: blink 1.5s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .map-with-image {
+            width: 100%;
+            height: 100%;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+            border: 1px solid rgba(0, 212, 255, 0.2);
+        }
+
+        .map-with-image img { width: 100%; height: 100%; object-fit: cover; }
+
+
+        .leaflet-map {
+            width: 100%;
+            height: 400px;
+            min-height: 300px;
+            border-radius: 6px;
+            z-index: 1;
+            filter: brightness(0.9) contrast(1.1) hue-rotate(190deg) saturate(0.5);
+        }
+        .leaflet-tile { filter: none !important; }
+        .leaflet-control-zoom { border: none !important; box-shadow: 0 0 10px rgba(0,212,255,0.3) !important; }
+        .leaflet-control-zoom a { 
+            background: rgba(0,30,60,0.85) !important; 
+            color: #00d4ff !important; 
+            border: 1px solid rgba(0,212,255,0.3) !important; 
+        }
+        .leaflet-control-attribution { display: none !important; }
+        .leaflet-popup-content-wrapper {
+            background: rgba(0,30,60,0.9) !important;
+            color: #e0e6ed !important;
+            border: 1px solid rgba(0,212,255,0.3) !important;
+            border-radius: 8px !important;
+        }
+        .leaflet-popup-tip { background: rgba(0,30,60,0.9) !important; }
+
+        .map-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 20, 40, 0.3);
+        }
+
+        .map-controls {
+            position: absolute;
+            right: 15px;
+            top: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 10;
+        }
+
+        .map-control-btn {
+            width: 36px;
+            height: 36px;
+            background: rgba(0, 40, 80, 0.9);
+            border: 1px solid rgba(0, 212, 255, 0.4);
+            border-radius: 6px;
+            color: var(--accent-cyan);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        .map-control-btn:hover { background: rgba(0, 212, 255, 0.2); }
+
+        .map-legend {
+            position: absolute;
+            left: 15px;
+            bottom: 15px;
+            background: rgba(0, 40, 80, 0.9);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 8px;
+            padding: 12px 15px;
+            z-index: 10;
+        }
+
+        .legend-title { font-size: 13px; color: var(--text-white); margin-bottom: 8px; font-weight: bold; }
+        .legend-items { display: flex; flex-direction: column; gap: 6px; }
+        .legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-gray); }
+        .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+        .map-markers { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+
+        .marker { position: absolute; cursor: pointer; transition: all 0.3s; }
+        .marker:hover { transform: scale(1.2); }
+
+        .marker-point {
+            width: 16px;
+            height: 16px;
+            background: var(--accent-cyan);
+            border: 2px solid white;
+            border-radius: 50%;
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.6);
+            animation: markerPulse 2s infinite;
+        }
+
+        .marker-alert .marker-point { background: var(--accent-red); animation: alertPulse 1s infinite; }
+        .marker-warning .marker-point { background: var(--accent-orange); animation: alertPulse 1.5s infinite; }
+
+        @keyframes markerPulse {
+            0%, 100% { box-shadow: 0 0 15px rgba(0, 212, 255, 0.6); }
+            50% { box-shadow: 0 0 25px rgba(0, 212, 255, 0.9); }
+        }
+
+        @keyframes alertPulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.3); opacity: 0.7; }
+        }
+
+        .marker-tooltip {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 40, 80, 0.95);
+            border: 1px solid var(--accent-cyan);
+            border-radius: 6px;
+            padding: 8px 12px;
+            white-space: nowrap;
+            font-size: 12px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            margin-bottom: 8px;
+        }
+
+        .marker:hover .marker-tooltip { opacity: 1; }
+
+        .street-info { padding: 15px; }
+        .street-name { font-size: 24px; font-weight: bold; color: var(--text-white); margin-bottom: 5px; }
+        .street-code { font-size: 13px; color: var(--text-gray); margin-bottom: 15px; }
+        .info-list { display: flex; flex-direction: column; gap: 10px; }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: rgba(0, 40, 80, 0.4);
+            border-radius: 6px;
+            font-size: 13px;
+        }
+
+        .info-label { color: var(--text-gray); }
+        .info-value { color: var(--text-white); font-weight: bold; }
+
+        .event-list { flex: 1; overflow-y: auto; max-height: 300px; }
+
+        .event-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px;
+            background: rgba(0, 40, 80, 0.4);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 3px solid var(--accent-cyan);
+            transition: all 0.3s;
+        }
+
+        .event-item:hover { background: rgba(0, 80, 120, 0.5); }
+        .event-item.alert { border-left-color: var(--accent-red); }
+        .event-item.warning { border-left-color: var(--accent-orange); }
+
+        .event-icon {
+            width: 36px;
+            height: 36px;
+            background: rgba(0, 212, 255, 0.2);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .event-item.alert .event-icon { background: rgba(255, 68, 68, 0.2); }
+        .event-item.warning .event-icon { background: rgba(255, 153, 0, 0.2); }
+        .event-content { flex: 1; }
+        .event-title { font-size: 14px; color: var(--text-white); margin-bottom: 4px; }
+        .event-meta { font-size: 12px; color: var(--text-gray); display: flex; gap: 15px; }
+
+        .event-status {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            background: rgba(0, 255, 136, 0.2);
+            color: var(--accent-green);
+        }
+
+        .event-item.alert .event-status { background: rgba(255, 68, 68, 0.2); color: var(--accent-red); }
+
+        .chart-container { position: relative; height: 200px; }
+
+        .security-overview { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 15px; }
+
+        .security-item {
+            text-align: center;
+            padding: 20px 15px;
+            background: linear-gradient(135deg, rgba(0, 60, 100, 0.5), rgba(0, 40, 80, 0.5));
+            border-radius: 10px;
+            border: 1px solid rgba(0, 212, 255, 0.2);
+        }
+
+        .security-icon { font-size: 36px; margin-bottom: 10px; }
+        .security-value { font-size: 36px; font-weight: bold; color: var(--accent-cyan); }
+        .security-label { font-size: 14px; color: var(--text-gray); margin-top: 5px; }
+
+        .video-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; height: calc(100% - 60px); }
+
+        .video-item {
+            background: rgba(0, 20, 40, 0.8);
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+            border: 1px solid rgba(0, 212, 255, 0.2);
+        }
+
+        .video-placeholder { width: 100%; height: 100%; min-height: 150px; position: relative; }
+        .video-placeholder img { width: 100%; height: 100%; object-fit: cover; }
+
+        .video-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 8px 10px;
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .video-name { font-size: 12px; }
+        .video-status { display: flex; align-items: center; gap: 5px; font-size: 11px; }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            animation: blink 1.5s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .progress-ring-container { display: flex; justify-content: center; gap: 30px; padding: 15px 0; }
+        .progress-ring-item { text-align: center; }
+        .progress-ring { position: relative; width: 100px; height: 100px; }
+        .progress-ring svg { transform: rotate(-90deg); }
+        .progress-ring circle { fill: none; stroke-width: 8; }
+        .progress-ring .bg { stroke: rgba(255, 255, 255, 0.1); }
+        .progress-ring .progress { stroke-linecap: round; transition: stroke-dashoffset 1s ease; }
+        .progress-ring .value { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 24px; font-weight: bold; }
+        .progress-ring .label { font-size: 13px; color: var(--text-gray); margin-top: 8px; }
+
+        .grid-distribution { display: flex; flex-direction: column; gap: 8px; }
+        .grid-bar { display: flex; align-items: center; gap: 10px; }
+        .grid-name { width: 80px; font-size: 12px; color: var(--text-gray); }
+        .grid-bar-track { flex: 1; height: 20px; background: rgba(255, 255, 255, 0.1); border-radius: 10px; overflow: hidden; }
+
+        .grid-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-cyan), var(--light-blue));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 8px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .people-analysis { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
+
+        .people-card {
+            padding: 15px;
+            background: rgba(0, 40, 80, 0.5);
+            border-radius: 8px;
+            border: 1px solid rgba(0, 212, 255, 0.15);
+        }
+
+        .people-title { font-size: 14px; color: var(--accent-cyan); margin-bottom: 10px; }
+        .people-stats { display: flex; flex-direction: column; gap: 8px; }
+        .people-stat { display: flex; justify-content: space-between; font-size: 13px; }
+        .people-stat .label { color: var(--text-gray); }
+        .people-stat .value { color: var(--text-white); font-weight: bold; }
+
+        .data-table { width: 100%; border-collapse: collapse; }
+        .data-table th { text-align: left; padding: 10px 12px; background: rgba(0, 60, 100, 0.5); color: var(--accent-cyan); font-size: 13px; font-weight: bold; border-bottom: 1px solid rgba(0, 212, 255, 0.3); }
+        .data-table td { padding: 10px 12px; font-size: 13px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+        .data-table tr:hover td { background: rgba(0, 80, 120, 0.3); }
+
+        .device-status { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .device-item { text-align: center; padding: 15px 10px; background: rgba(0, 40, 80, 0.5); border-radius: 8px; }
+        .device-icon { font-size: 24px; margin-bottom: 8px; }
+        .device-count { font-size: 24px; font-weight: bold; }
+        .device-label { font-size: 12px; color: var(--text-gray); margin-top: 4px; }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0, 40, 80, 0.5); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb { background: rgba(0, 212, 255, 0.4); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(0, 212, 255, 0.6); }
+
+        .realtime-value { color: var(--accent-green); animation: realtimePulse 1s infinite; }
+
+        @keyframes realtimePulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .business-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+
+        .business-item {
+            padding: 20px 15px;
+            text-align: center;
+            background: linear-gradient(135deg, rgba(0, 60, 100, 0.5), rgba(0, 40, 80, 0.5));
+            border-radius: 10px;
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .business-item:hover { transform: translateY(-3px); border-color: var(--accent-cyan); box-shadow: 0 5px 20px rgba(0, 212, 255, 0.2); }
+        .business-icon { font-size: 32px; margin-bottom: 10px; }
+        .business-name { font-size: 14px; color: var(--text-white); font-weight: bold; }
+        .business-count { font-size: 12px; color: var(--text-gray); margin-top: 5px; }
+
+        .key-people { display: flex; flex-direction: column; gap: 10px; }
+
+        .people-card-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: rgba(0, 40, 80, 0.5);
+            border-radius: 8px;
+        }
+
+        .people-avatar {
+            width: 40px;
+            height: 40px;
+            background: rgba(0, 212, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .people-detail { flex: 1; }
+        .people-detail-name { font-size: 14px; color: var(--text-white); }
+        .people-detail-type { font-size: 12px; color: var(--accent-orange); }
+
+        .workflow-container { padding: 20px 0; }
+        .workflow-steps { display: flex; justify-content: space-between; align-items: center; position: relative; }
+
+        .workflow-line {
+            position: absolute;
+            top: 30px;
+            left: 60px;
+            right: 60px;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-cyan), var(--light-blue), var(--accent-cyan));
+            z-index: 0;
+        }
+
+        .workflow-step { display: flex; flex-direction: column; align-items: center; z-index: 1; }
+
+        .step-icon {
+            width: 60px;
+            height: 60px;
+            background: var(--bg-card);
+            border: 3px solid var(--accent-cyan);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .step-name { font-size: 13px; color: var(--text-white); text-align: center; }
+        .step-count { font-size: 12px; color: var(--text-gray); margin-top: 3px; }
+
+        .twin-controls { display: flex; gap: 10px; }
+
+        .twin-btn {
+            padding: 8px 20px;
+            background: rgba(0, 40, 80, 0.7);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 6px;
+            color: var(--text-gray);
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .twin-btn:hover, .twin-btn.active {
+            background: rgba(0, 212, 255, 0.2);
+            color: var(--accent-cyan);
+            border-color: var(--accent-cyan);
+        }
+
+        .twin-display {
+            flex: 1;
+            background: rgba(0, 20, 40, 0.9);
+            border-radius: 10px;
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .twin-display img { width: 100%; height: 100%; object-fit: cover; }
+        .twin-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 20, 40, 0.2); }
+
+        .twin-info-panel {
+            position: absolute;
+            bottom: 15px;
+            right: 15px;
+            background: rgba(0, 40, 80, 0.95);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            width: 280px;
+        }
+
+        .twin-info-title { font-size: 16px; font-weight: bold; color: var(--accent-cyan); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid rgba(0, 212, 255, 0.2); }
+        .twin-info-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; }
+        .twin-info-label { color: var(--text-gray); }
+        .twin-info-value { color: var(--text-white); font-weight: bold; }
+        .twin-info-value.good { color: var(--accent-green); }
+        .twin-info-value.warning { color: var(--accent-orange); }
+        .twin-info-value.alert { color: var(--accent-red); }
+
+        .alert-panel { padding: 15px; }
+        .alert-level { display: flex; gap: 10px; margin-bottom: 15px; }
+
+        .level-btn {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            background: rgba(0, 40, 80, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .level-btn:hover, .level-btn.active { border-color: var(--accent-cyan); }
+        .level-btn.level-1.active { background: rgba(0, 212, 255, 0.2); border-color: var(--accent-cyan); }
+        .level-btn.level-2.active { background: rgba(255, 153, 0, 0.2); border-color: var(--accent-orange); }
+        .level-btn.level-3.active { background: rgba(255, 68, 68, 0.2); border-color: var(--accent-red); }
+
+        .level-name { font-size: 12px; color: var(--text-gray); }
+        .level-count { font-size: 28px; font-weight: bold; margin-top: 5px; }
+        .level-1 .level-count { color: var(--accent-cyan); }
+        .level-2 .level-count { color: var(--accent-orange); }
+        .level-3 .level-count { color: var(--accent-red); }
+
+        .resource-distribution { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+
+        .resource-item {
+            width: calc(33.33% - 7px);
+            padding: 15px 10px;
+            text-align: center;
+            background: rgba(0, 40, 80, 0.5);
+            border-radius: 8px;
+            border: 1px solid rgba(0, 212, 255, 0.15);
+        }
+
+        .resource-icon { font-size: 28px; margin-bottom: 8px; }
+        .resource-num { font-size: 22px; font-weight: bold; color: var(--text-white); }
+        .resource-name { font-size: 12px; color: var(--text-gray); margin-top: 4px; }
+
+        .dispatch-panel { flex: 1; }
+        .dispatch-tabs { display: flex; gap: 5px; margin-bottom: 15px; }
+
+        .dispatch-tab {
+            padding: 8px 20px;
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            color: var(--text-gray);
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .dispatch-tab:hover, .dispatch-tab.active {
+            background: rgba(0, 212, 255, 0.15);
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+        }
+
+        .dispatch-content { flex: 1; }
+        .team-list { display: flex; flex-direction: column; gap: 10px; }
+
+        .team-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: rgba(0, 40, 80, 0.5);
+            border-radius: 8px;
+            border: 1px solid rgba(0, 212, 255, 0.15);
+        }
+
+        .team-avatar {
+            width: 45px;
+            height: 45px;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--primary-blue));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .team-info { flex: 1; }
+        .team-name { font-size: 14px; color: var(--text-white); font-weight: bold; }
+        .team-status { font-size: 12px; color: var(--accent-green); margin-top: 3px; }
+        .team-location { font-size: 12px; color: var(--text-gray); }
+
+        .stats-row { display: flex; gap: 15px; }
+        .stats-row .card { flex: 1; }
+
+        .view-section { opacity: 0; visibility: hidden; transition: opacity 0.3s ease; }
+        .view-section.active { opacity: 1; visibility: visible; }
+
+        .twin-gallery { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; height: 200px; }
+
+        .twin-gallery-item {
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .twin-gallery-item:hover { border-color: var(--accent-cyan); transform: scale(1.02); }
+        .twin-gallery-item img { width: 100%; height: 100%; object-fit: cover; }
+
+        .twin-gallery-label {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 6px 10px;
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+            font-size: 12px;
+            color: var(--text-white);
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-pattern"></div>
+
+    <header class="header">
+        <div class="header-left">
+            <div class="logo-area">
+                <div class="logo-icon">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                        <path d="M2 17l10 5 10-5"/>
+                        <path d="M2 12l10 5 10-5"/>
+                    </svg>
+                </div>
+                <div>
+                    <div class="logo-text">长白新村街道综治中心</div>
+                    <div class="platform-subtitle">指挥平台</div>
+                </div>
+            </div>
+        </div>
+
+        <nav class="header-center">
+            <button class="nav-btn active" data-view="overview">综合态势</button>
+            <button class="nav-btn" data-view="security">安防监控</button>
+            <button class="nav-btn" data-view="governance">社会综治</button>
+            <button class="nav-btn" data-view="cockpit">决策驾驶舱</button>
+            <button class="nav-btn" data-view="emergency">应急指挥</button>
+            <button class="nav-btn" data-view="data">数据融合</button>
+        </nav>
+
+        <div class="header-right">
+            <div class="weather-widget">
+                <span class="weather-icon">☀️</span>
+                <div class="weather-info">
+                    <div class="weather-temp">18°C</div>
+                    <div>晴</div>
+                </div>
+            </div>
+            <div class="time-display">
+                <div class="time-main" id="currentTime">14:32:45</div>
+                <div class="time-date" id="currentDate">2026年3月18日</div>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <!-- 综合态势页面 -->
+        <section class="overview-layout view-section active" id="overviewView">
+            <div class="overview-left">
+                <div class="card stat-card">
+                    <div class="card-header"><div class="card-title">今日数据概览</div></div>
+                    <div class="stat-grid">
+                        <div class="stat-item">
+                            <div class="stat-icon">📊</div>
+                            <div class="stat-value realtime-value" id="eventCount">128</div>
+                            <div class="stat-label">今日事件</div>
+                            <div class="stat-trend trend-down"><span>↓ 12%</span></div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-icon">👥</div>
+                            <div class="stat-value">8,542</div>
+                            <div class="stat-label">实有人口</div>
+                            <div class="stat-trend trend-up"><span>↑ 3%</span></div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-icon">🏠</div>
+                            <div class="stat-value">1,256</div>
+                            <div class="stat-label">房屋总数</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-icon">📹</div>
+                            <div class="stat-value">386</div>
+                            <div class="stat-label">监控点位</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card street-info">
+                    <div class="street-name">长白新村街道</div>
+                    <div class="street-code">区划代码：210102</div>
+                    <div class="info-list">
+                        <div class="info-row"><span class="info-label">社区数量</span><span class="info-value">12个</span></div>
+                        <div class="info-row"><span class="info-label">网格数量</span><span class="info-value">48个</span></div>
+                        <div class="info-row"><span class="info-label">重点企业</span><span class="info-value">86家</span></div>
+                        <div class="info-row"><span class="info-label">综治人员</span><span class="info-value">156人</span></div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><div class="card-title">设备状态</div></div>
+                    <div class="device-status">
+                        <div class="device-item">
+                            <div class="device-icon">📹</div>
+                            <div class="device-count" style="color: var(--accent-green);">372</div>
+                            <div class="device-label">在线</div>
+                        </div>
+                        <div class="device-item">
+                            <div class="device-icon">📹</div>
+                            <div class="device-count" style="color: var(--accent-red);">14</div>
+                            <div class="device-label">离线</div>
+                        </div>
+                        <div class="device-item">
+                            <div class="device-icon">🚨</div>
+                            <div class="device-count" style="color: var(--accent-orange);">8</div>
+                            <div class="device-label">告警</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="overview-center">
+                <div class="card map-container">
+                    <div class="card-header">
+                        <div class="card-title">街道态势感知地图</div>
+                        <div class="card-tools">
+                            <button class="tool-btn" title="全屏">⛶</button>
+                            <button class="tool-btn" title="定位">⊙</button>
+                        </div>
+                    </div>
+                    <div class="leaflet-map" id="overviewMap"></div>
+                </div>
+                <div class="security-overview">
+                    <div class="security-item">
+                        <div class="security-icon">🚗</div>
+                        <div class="security-value">1,286</div>
+                        <div class="security-label">今日车流量</div>
+                    </div>
+                    <div class="security-item">
+                        <div class="security-icon">👤</div>
+                        <div class="security-value">5,432</div>
+                        <div class="security-label">人脸识别</div>
+                    </div>
+                    <div class="security-item">
+                        <div class="security-icon">🚪</div>
+                        <div class="security-value">98.5%</div>
+                        <div class="security-label">门禁通过率</div>
+                    </div>
+                    <div class="security-item">
+                        <div class="security-icon">⚡</div>
+                        <div class="security-value">23</div>
+                        <div class="security-label">用电异常</div>
+                    </div>
+                </div>
+            </div>
+            <div class="overview-right">
+                <div class="card" style="flex: 1;">
+                    <div class="card-header">
+                        <div class="card-title">实时事件</div>
+                        <span style="font-size: 12px; color: var(--accent-green);">● 实时更新</span>
+                    </div>
+                    <div class="event-list">
+                        <div class="event-item alert">
+                            <div class="event-icon">🚨</div>
+                            <div class="event-content">
+                                <div class="event-title">长白三社区 - 异常人员闯入告警</div>
+                                <div class="event-meta"><span>2026-03-18 14:28</span><span class="event-status">待处理</span></div>
+                            </div>
+                        </div>
+                        <div class="event-item warning">
+                            <div class="event-icon">⚠️</div>
+                            <div class="event-content">
+                                <div class="event-title">长白五社区 - 消防通道占用</div>
+                                <div class="event-meta"><span>2026-03-18 14:25</span><span class="event-status">处理中</span></div>
+                            </div>
+                        </div>
+                        <div class="event-item">
+                            <div class="event-icon">📋</div>
+                            <div class="event-content">
+                                <div class="event-title">网格员上报 - 设施损坏</div>
+                                <div class="event-meta"><span>2026-03-18 14:20</span><span class="event-status">已处理</span></div>
+                            </div>
+                        </div>
+                        <div class="event-item">
+                            <div class="event-icon">✅</div>
+                            <div class="event-content">
+                                <div class="event-title">纠纷调解完成 - 长白二社区</div>
+                                <div class="event-meta"><span>2026-03-18 14:15</span><span class="event-status">已完成</span></div>
+                            </div>
+                        </div>
+                        <div class="event-item">
+                            <div class="event-icon">📞</div>
+                            <div class="event-content">
+                                <div class="event-title">12345热线 - 噪音投诉</div>
+                                <div class="event-meta"><span>2026-03-18 14:10</span><span class="event-status">派单中</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><div class="card-title">社区治安指数</div></div>
+                    <div class="chart-container"><canvas id="securityIndexChart"></canvas></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 安防监控页面 -->
+        <section class="security-layout view-section" id="securityView">
+            <div class="security-left">
+                <div class="card">
+                    <div class="card-header"><div class="card-title">监控设备概况</div></div>
+                    <div class="stat-grid">
+                        <div class="stat-item">
+                            <div class="stat-icon">📹</div>
+                            <div class="stat-value" style="color: var(--accent-cyan);">386</div>
+                            <div class="stat-label">监控点位</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-icon">🖥</div>
+                            <div class="stat-value" style="color: var(--accent-green);">372</div>
+                            <div class="stat-label">在线设备</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-icon">🚨</div>
+                            <div class="stat-value" style="color: var(--accent-red);">8</div>
+                            <div class="stat-label">异常告警</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-icon">📊</div>
+                            <div class="stat-value">96.4%</div>
+                            <div class="stat-label">在线率</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><div class="card-title">雪亮工程接入</div></div>
+                    <div class="info-list">
+                        <div class="info-row"><span class="info-label">公安联网</span><span class="info-value" style="color: var(--accent-green);">● 已接入</span></div>
+                        <div class="info-row"><span class="info-label">城管联网</span><span class="info-value" style="color: var(--accent-green);">● 已接入</span></div>
+                        <div class="info-row"><span class="info-label">住建联网</span><span class="info-value" style="color: var(--accent-green);">● 已接入</span></div>
+                        <div class="info-row"><span class="info-label">应急联网</span><span class="info-value" style="color: var(--accent-orange);">● 接入中</span></div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><div class="card-title">本周告警统计</div></div>
+                    <div class="chart-container"><canvas id="alertChart"></canvas></div>
+                </div>
+            </div>
+            <div class="security-center">
+                <div class="card" style="flex: 1;">
+                    <div class="card-header">
+                        <div class="card-title">实时监控画面</div>
+                        <div class="card-tools">
+                            <button class="tool-btn" title="全屏">⛶</button>
+                            <button class="tool-btn" title="轮巡">⟳</button>
+                        </div>
+                    </div>
+                    <div class="video-grid">
+                        <div class="video-item">
+                            <div class="video-placeholder">
+                                <img src="https://cdn.hailuoai.com/matrix_agent/20260318/image_tool/output/120858_34c9/workspace/chaobai-prototype/imgs/camera_01_new.jpg" alt="长白一路口" />
+                            </div>
+                            <div class="video-overlay">
+                                <span class="video-name">CAM-001 长白一路口</span>
+                                <span class="video-status"><span class="status-dot"></span>LIVE</span>
+                            </div>
+                        </div>
+                        <div class="video-item">
+                            <div class="video-placeholder">
+                                <img src="https://cdn.hailuoai.com/matrix_agent/20260318/image_tool/output/120812_1042/workspace/chaobai-prototype/imgs/camera_02_new.jpg" alt="长白二路" />
+                            </div>
+                            <div class="video-overlay">
+                                <span class="video-name">CAM-002 长白二路街面</span>
+                                <span class="video-status"><span class="status-dot"></span>LIVE</span>
+                            </div>
+                        </div>
+                        <div class="video-item">
+                            <div class="video-placeholder">
+                                <img src="https://cdn.hailuoai.com/matrix_agent/20260318/image_tool/output/120828_8719/workspace/chaobai-prototype/imgs/camera_04_new.jpg" alt="商业街" />
+                            </div>
+                            <div class="video-overlay">
+                                <span class="video-name">CAM-003 商业街</span>
+                                <span class="video-status"><span class="status-dot"></span>LIVE</span>
+                            </div>
+                        </div>
+                        <div class="video-item">
+                            <div class="video-placeholder">
+                                <img src="https://cdn.hailuoai.com/matrix_agent/20260318/image_tool/output/120844_9e01/workspace/chaobai-prototype/imgs/camera_05_new.jpg" alt="学校" />
+                            </div>
+                            <div class="video-overlay">
+                                <span class="video-name">CAM-005 学校周边</span>
+                                <span class="video-status"><span class="status-dot"></span>LIVE</span>
+                            </div>
+                        </div>
+                        <div class="video-item">
+                            <div class="video-placeholder">
+                                <img src="https://cdn.hailuoai.com/matrix_agent/20260318/image_tool/output/121114_79c8/workspace/chaobai-prototype/imgs/camera_07_new.jpg" alt="小巷" />
+                            </div>
+                            <div class="video-overlay">
+                                <span class="video-name">CAM-007 背街小巷</span>
+                                <span class="video-status"><span class="status-dot"></span>LIVE</span>
+                            </div>
+                        </div>
+                        <div class="video-item">
+                            <div class="video-placeholder">
+                                <img src="https://cdn.hailuoai.com/matrix_agent/20260318/image_tool/output/120911_b7c9/workspace/chaobai-prototype/imgs/camera_06_new.jpg" alt="停车场" />
+                            </div>
+                            <div class="video-overlay">
+                                <span class="video-name">CAM-008 社区广场</span>
+                                <span class="video-status"><span class="status-dot"></span>LIVE</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="security-right">
+                <div class="card">
+                    <div class="card-header"><div class="card-title">人脸识别记录</div></div>
+                    <div class="chart-container"><canvas id="faceChart"></canvas></div>
+                </div>
+                <div class="card" style="flex: 1;">
+                    <div class="card-header"><div class="card-title">最近抓拍</div></div>
+                    <div class="event-list">
+                        <div class="event-item">
+                            <div class="event-icon">👤</div>
+                            <div class="event-content">
+                                <div class="event-title">重点人员识别</div>
+                                <div class="event-meta"><span>长白一路口</span><span>14:28:32</span></div>
+                            </div>
+                        </div>
+                        <div class="event-item">
+                            <div class="event-icon">👤</div>
+                            <div class="event-content">
+                                <div class="event-title">陌生人识别</div>
+                                <div class="event-meta"><span>社区入口</span><span>14:25:15</span></div>
+                            </div>
+                        </div>
+                        <div class="event-item">
+                            <div class="event-icon">👤</div>
+                            <div class="event-content">
+                                <div class="event-title">人脸比对成功</div>
+                                <div class="event-meta"><span>商业街</span><span>14:22:48</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 社会综治页面 -->
+        <section class="governance-layout view-section" id="governanceView">
+            <div class="governance-left">
+                <div class="card">
+                    <div class="card-header"><div class="card-title">"9+X"综治业务</div></div>
+                    <div class="business-grid">
+                        <div class="business-item"><div class="business-icon">🏛️</div><div class="business-name">综治组织</div><div class="business-count">12个组织</div></div>
+                        <div class="business-item"><div class="business-icon">👥</div><div class="business-name">实有人口</div><div class="business-count">8,542人</div></div>
+                        <div class="business-item"><div class="business-icon">🏠</div><div class="business-name">房屋管理</div><div class="business-count">1,256套</div></div>
+                        <div class="business-item"><div class="business-icon">⚠️</div><div class="business-name">矛盾纠纷</div><div class="business-count">23件待调</div></div>
+                        <div class="business-item"><div class="business-icon">👮</div><div class="business-name">特殊人群</div><div class="business-count">48人</div></div>
+                        <div class="business-item"><div class="business-icon">🏢</div><div class="business-name">重点场所</div><div class="business-count">86处</div></div>
+                        <div class="business-item"><div class="business-icon">🚗</div><div class="business-name">车辆管理</div><div class="business-count">2,156辆</div></div>
+                        <div class="business-item"><div class="business-icon">📱</div><div class="business-name">综治事件</div><div class="business-count">128件</div></div>
+                        <div class="business-item"><div class="business-icon">📊</div><div class="business-name">数据研判</div><div class="business-count">分析中</div></div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><div class="card-title">重点人员管控</div></div>
+                    <div class="key-people">
+                        <div class="people-card-item"><div class="people-avatar">🚶</div><div class="people-detail"><div class="people-detail-name">刑满释放人员</div><div class="people-detail-type">重点关注</div></div><span style="color: var(--accent-orange);">12人</span></div>
+                        <div class="people-card-item"><div class="people-avatar">⚠️</div><div class="people-detail"><div class="people-detail-name">社区矫正对象</div><div class="people-detail-type">日常管控</div></div><span style="color: var(--accent-cyan);">8人</span></div>
+                        <div class="people-card-item"><div class="people-avatar">🏠</div><div class="people-detail"><div class="people-detail-name">精神障碍患者</div><div class="people-detail-type">健康跟踪</div></div><span style="color: var(--accent-green);">15人</span></div>
+                        <div class="people-card-item"><div class="people-avatar">👴</div><div class="people-detail"><div class="people-detail-name">独居老人</div><div class="people-detail-type">关怀走访</div></div><span style="color: var(--accent-cyan);">23人</span></div>
+                    </div>
+                </div>
+            </div>
+            <div class="governance-center">
+                <div class="card">
+                    <div class="card-header"><div class="card-title">事件处理流程</div></div>
+                    <div class="workflow-container">
+                        <div class="workflow-steps">
+                            <div class="workflow-line"></div>
+                            <div class="workflow-step"><div class="step-icon">📝</div><div class="step-name">事件上报</div><div class="step-count">128件</div></div>
+                            <div class="workflow-step"><div class="step-icon">📋</div><div class="step-name">任务派发</div><div class="step-count">125件</div></div>
+                            <div class="workflow-step"><div class="step-icon">👤</div><div class="step-name">网格员处理</div><div class="step-count">120件</div></div>
+                            <div class="workflow-step"><div class="step-icon">🔍</div><div class="step-name">结果核查</div><div class="step-count">118件</div></div>
+                            <div class="workflow-step"><div class="step-icon">✅</div><div class="step-name">办结归档</div><div class="step-count">115件</div></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card" style="flex: 1;">
+                    <div class="card-header"><div class="card-title">矛盾纠纷分析</div></div>
+                    <div style="display: flex; gap: 20px; height: calc(100% - 50px);">
+                        <div style="flex: 1;"><div class="chart-container" style="height: 100%;"><canvas id="disputeChart"></canvas></div></div>
+                        <div style="width: 300px;">
+                            <table class="data-table">
+                                <thead><tr><th>类型</th><th>数量</th><th>状态</th></tr></thead>
+                                <tbody>
+                                    <tr><td>邻里纠纷</td><td>45件</td><td style="color: var(--accent-orange);">处理中</td></tr>
+                                    <tr><td>物业纠纷</td><td>32件</td><td style="color: var(--accent-green);">已化解</td></tr>
+                                    <tr><td>劳资纠纷</td><td>18件</td><td style="color: var(--accent-orange);">处理中</td></tr>
+                                    <tr><td>其他纠纷</td><td>28件</td><td style="color: var(--accent-cyan);">待处理</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="governance-right">
+                <div class="card">
+                    <div class="card-header"><div class="card-title">网格分布</div></div>
+                    <div class="grid-distribution">
+                        <div class="grid-bar"><span class="grid-name">第一网格</span><div class="grid-bar-track"><div class="grid-bar-fill" style="width: 92%;">92件</div></div></div>
+                        <div class="grid-bar"><span class="grid-name">第二网格</span><div class="grid-bar-track"><div class="grid-bar-fill" style="width: 85%;">85件</div></div></div>
+                        <div class="grid-bar"><span class="grid-name">第三网格</span><div class="grid-bar-track"><div class="grid-bar-fill" style="width: 78%;">78件</div></div></div>
+                        <div class="grid-bar"><span class="grid-name">第四网格</span><div class="grid-bar-track"><div class="grid-bar-fill" style="width: 65%;">65件</div></div></div>
+                        <div class="grid-bar"><span class="grid-name">第五网格</span><div class="grid-bar-track"><div class="grid-bar-fill" style="width: 58%;">58件</div></div></div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><div class="card-title">综治力量配置</div></div>
+                    <div class="people-analysis">
+                        <div class="people-card"><div class="people-title">网格员</div><div class="people-stats"><div class="people-stat"><span class="label">在岗</span><span class="value" style="color: var(--accent-green);">42人</span></div><div class="people-stat"><span class="label">巡查中</span><span class="value" style="color: var(--accent-cyan);">28人</span></div></div></div>
+                        <div class="people-card"><div class="people-title">志愿者</div><div class="people-stats"><div class="people-stat"><span class="label">登记人数</span><span class="value">156人</span></div><div class="people-stat"><span class="label">活跃度</span><span class="value" style="color: var(--accent-green);">78%</span></div></div></div>
+                        <div class="people-card"><div class="people-title">保安力量</div><div class="people-stats"><div class="people-stat"><span class="label">配置人数</span><span class="value">86人</span></div><div class="people-stat"><span class="label">在线率</span><span class="value" style="color: var(--accent-green);">95%</span></div></div></div>
+                        <div class="people-card"><div class="people-title">民警力量</div><div class="people-stats"><div class="people-stat"><span class="label">驻社区</span><span class="value">12人</span></div><div class="people-stat"><span class="label">今日出警</span><span class="value">5次</span></div></div></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 决策驾驶舱页面 -->
+        <section class="cockpit-layout view-section" id="cockpitView">
+            <div class="cockpit-left">
+                <div class="card">
+                    <div class="card-header"><div class="card-title">综合治理指数</div></div>
+                    <div class="progress-ring-container">
+                        <div class="progress-ring-item">
+                            <div class="progress-ring">
+                                <svg width="100" height="100"><circle class="bg" cx="50" cy="50" r="42"/><circle class="progress" cx="50" cy="50" r="42" stroke="var(--accent-cyan)" stroke-dasharray="264" stroke-dashoffset="40"/></svg>
+                                <span class="value" style="color: var(--accent-cyan);">85</span>
+                            </div>
+                            <div class="label">综合评分</div>
+                        </div>
+                        <div class="progress-ring-item">
+                            <div class="progress-ring">
+                                <svg width="100" height="100"><circle class="bg" cx="50" cy="50" r="42"/><circle class="progress" cx="50" cy="50" r="42" stroke="var(--accent-green)" stroke-dasharray="264" stroke-dashoffset="26"/></svg>
+                                <span class="value" style="color: var(--accent-green);">92</span>
+                            </div>
+                            <div class="label">安全感</div>
+                        </div>
+                        <div class="progress-ring-item">
+                            <div class="progress-ring">
+                                <svg width="100" height="100"><circle class="bg" cx="50" cy="50" r="42"/><circle class="progress" cx="50" cy="50" r="42" stroke="var(--accent-orange)" stroke-dasharray="264" stroke-dashoffset="66"/></svg>
+                                <span class="value" style="color: var(--accent-orange);">75</span>
+                            </div>
+                            <div class="label">满意度</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card" style="flex: 1;">
+                    <div class="card-header"><div class="card-title">月度事件趋势</div></div>
+                    <div class="chart-container"><canvas id="trendChart"></canvas></div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><div class="card-title">人口结构分析</div></div>
+                    <div class="people-analysis">
+                        <div class="people-card"><div class="people-title">户籍人口</div><div class="people-stats"><div class="people-stat"><span class="label">总数</span><span class="value">6,285人</span></div><div class="people-stat"><span class="label">占比</span><span class="value">73.6%</span></div></div></div>
+                        <div class="people-card"><div class="people-title">流动人口</div><div class="people-stats"><div class="people-stat"><span class="label">总数</span><span class="value">2,257人</span></div><div class="people-stat"><span class="label">占比</span><span class="value">26.4%</span></div></div></div>
+                    </div>
+                </div>
+            </div>
+            <div class="cockpit-center">
+                <div class="card">
+                    <div class="card-header"><div class="card-title">多维度分析</div></div>
+                    <div style="display: flex; gap: 30px;">
+                        <div style="flex: 1;"><div class="chart-container" style="height: 180px;"><canvas id="pieChart1"></canvas></div></div>
+                        <div style="flex: 1;"><div class="chart-container" style="height: 180px;"><canvas id="pieChart2"></canvas></div></div>
+                        <div style="flex: 1;"><div class="chart-container" style="height: 180px;"><canvas id="pieChart3"></canvas></div></div>
+                    </div>
+                </div>
+                <div class="card" style="flex: 1;">
+                    <div class="card-header">
+                        <div class="card-title">数据驾驶舱</div>
+                        <div class="card-tools"><button class="tool-btn">📊</button><button class="tool-btn">📈</button><button class="tool-btn">⛶</button></div>
+                    </div>
+                    <div class="chart-container" style="height: calc(100% - 60px);"><canvas id="cockpitChart"></canvas></div>
+                </div>
+            </div>
+            <div class="cockpit-right">
+                <div class="card">
+                    <div class="card-header"><div class="card-title">社区综合治理排名</div></div>
+                    <div class="grid-distribution">
+                        <div class="grid-bar"><span class="grid-name">长白一社区</span><div class="grid-bar-track"><div class="grid-bar-fill" style="width: 95%; background: linear-gradient(90deg, #00ff88, #00d4ff);">95分</div></div></div>
+                        <div class="grid-bar"><span class="grid-name">长白二社区</span><div class="grid-bar-track"><div class="grid-bar-fill" style="width: 92%;">92分</div></div></div>
+                        <div class="grid-bar"><span class="grid-name">长白三社区</span><div class="grid-bar-track"><div class="grid-bar-fill" style="width: 88%;">88分</div></div></div>
+                        <div class="grid-bar"><span class="grid-name">长白四社区</span><div class="grid-bar-track"><div class="grid-bar-fill" style="width: 85%;">85分</div></div></div>
+                        <div class="grid-bar"><span class="grid-name">长白五社区</span><div class="grid-bar-track"><div class="grid-bar-fill" style="width: 82%;">82分</div></div></div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><div class="card-title">实时运行指标</div></div>
+                    <div class="stat-grid">
+                        <div class="stat-item"><div class="stat-icon">⚡</div><div class="stat-value">99.8%</div><div class="stat-label">系统可用率</div></div>
+                        <div class="stat-item"><div class="stat-icon">📊</div><div class="stat-value">&lt;100ms</div><div class="stat-label">响应时间</div></div>
+                        <div class="stat-item"><div class="stat-icon">🔄</div><div class="stat-value">15:00</div><div class="stat-label">数据更新</div></div>
+                        <div class="stat-item"><div class="stat-icon">👥</div><div class="stat-value">23</div><div class="stat-label">在线用户</div></div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><div class="card-title">风险预警</div></div>
+                    <div class="event-list">
+                        <div class="event-item warning">
+                            <div class="event-icon">⚠️</div>
+                            <div class="event-content"><div class="event-title">下周高温预警</div><div class="event-meta"><span>用电负荷可能上升</span></div></div>
+                        </div>
+                        <div class="event-item">
+                            <div class="event-icon">📅</div>
+                            <div class="event-content"><div class="event-title">矛盾纠纷高发期</div><div class="event-meta"><span>节假日前后需关注</span></div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 应急指挥页面 -->
+        <section class="emergency-layout view-section" id="emergencyView">
+            <div class="emergency-left">
+                <div class="card alert-panel">
+                    <div class="card-header"><div class="card-title">预警信息</div></div>
+                    <div class="alert-level">
+                        <div class="level-btn level-1"><div class="level-name">一般</div><div class="level-count">15</div></div>
+                        <div class="level-btn level-2 active"><div class="level-name">较大</div><div class="level-count">3</div></div>
+                        <div class="level-btn level-3"><div class="level-name">重大</div><div class="level-count">0</div></div>
+                    </div>
+                    <div class="event-list">
+                        <div class="event-item warning">
+                            <div class="event-icon">🔥</div>
+                            <div class="event-content"><div class="event-title">消防预警 - 长白三社区</div><div class="event-meta"><span>2026-03-18 14:20</span></div></div>
+                        </div>
+                        <div class="event-item warning">
+                            <div class="event-icon">⚡</div>
+                            <div class="event-content"><div class="event-title">用电异常 - 商业街</div><div class="event-meta"><span>2026-03-18 14:15</span></div></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><div class="card-title">应急资源分布</div></div>
+                    <div class="resource-distribution">
+                        <div class="resource-item"><div class="resource-icon">🚒</div><div class="resource-num">3</div><div class="resource-name">消防站</div></div>
+                        <div class="resource-item"><div class="resource-icon">🏥</div><div class="resource-num">5</div><div class="resource-name">医疗机构</div></div>
+                        <div class="resource-item"><div class="resource-icon">🚔</div><div class="resource-num">2</div><div class="resource-name">派出所</div></div>
+                        <div class="resource-item"><div class="resource-icon">🏢</div><div class="resource-num">12</div><div class="resource-name">避难场所</div></div>
+                        <div class="resource-item"><div class="resource-icon">🚗</div><div class="resource-num">8</div><div class="resource-name">救援车辆</div></div>
+                        <div class="resource-item"><div class="resource-icon">👥</div><div class="resource-num">86</div><div class="resource-name">应急人员</div></div>
+                    </div>
+                </div>
+            </div>
+            <div class="emergency-center">
+                <div class="card" style="flex: 1;">
+                    <div class="card-header">
+                        <div class="card-title">应急指挥调度</div>
+                        <div class="card-tools"><button class="tool-btn">📍</button><button class="tool-btn">📢</button><button class="tool-btn">📞</button></div>
+                    </div>
+                    <div class="leaflet-map" id="emergencyMap" style="flex: 1;"></div>
+                </div>
+            </div>
+            <div class="emergency-right">
+                <div class="card dispatch-panel">
+                    <div class="card-header"><div class="card-title">指挥调度</div></div>
+                    <div class="dispatch-tabs"><button class="dispatch-tab active">处置力量</button><button class="dispatch-tab">通讯录</button><button class="dispatch-tab">预案库</button></div>
+                    <div class="dispatch-content">
+                        <div class="team-list">
+                            <div class="team-item"><div class="team-avatar">🚒</div><div class="team-info"><div class="team-name">消防一组</div><div class="team-status">● 待命</div><div class="team-location">长白一路</div></div><button class="tool-btn">📞</button></div>
+                            <div class="team-item"><div class="team-avatar">👮</div><div class="team-info"><div class="team-name">民警一组</div><div class="team-status">● 出勤中</div><div class="team-location">长白二路</div></div><button class="tool-btn">📞</button></div>
+                            <div class="team-item"><div class="team-avatar">🏥</div><div class="team-info"><div class="team-name">医疗一组</div><div class="team-status">● 待命</div><div class="team-location">社区卫生中心</div></div><button class="tool-btn">📞</button></div>
+                            <div class="team-item"><div class="team-avatar">🔧</div><div class="team-info"><div class="team-name">抢修一组</div><div class="team-status">● 待命</div><div class="team-location">供电所</div></div><button class="tool-btn">📞</button></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><div class="card-title">通讯记录</div></div>
+                    <div class="event-list">
+                        <div class="event-item"><div class="event-icon">📞</div><div class="event-content"><div class="event-title">呼叫消防中心</div><div class="event-meta"><span>14:25:30</span><span>时长 2:35</span></div></div></div>
+                        <div class="event-item"><div class="event-icon">📱</div><div class="event-content"><div class="event-title">群组广播</div><div class="event-meta"><span>14:22:15</span><span>已送达 86人</span></div></div></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 数据融合页面 -->
+        <section class="data-layout view-section" id="dataView">
+            <div style="flex: 1; display: flex; flex-direction: column; gap: 15px;">
+                <div class="card">
+                    <div class="card-header"><div class="card-title">数据源接入状态</div></div>
+                    <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                        <div style="text-align: center; padding: 15px 25px; background: rgba(0, 40, 80, 0.5); border-radius: 8px; min-width: 150px;"><div style="font-size: 32px;">🏛️</div><div style="font-size: 14px; color: var(--accent-green); margin-top: 8px;">● 公安数据</div><div style="font-size: 12px; color: var(--text-gray); margin-top: 4px;">接入中</div></div>
+                        <div style="text-align: center; padding: 15px 25px; background: rgba(0, 40, 80, 0.5); border-radius: 8px; min-width: 150px;"><div style="font-size: 32px;">🏥</div><div style="font-size: 14px; color: var(--accent-green); margin-top: 8px;">● 卫健数据</div><div style="font-size: 12px; color: var(--text-gray); margin-top: 4px;">已接入</div></div>
+                        <div style="text-align: center; padding: 15px 25px; background: rgba(0, 40, 80, 0.5); border-radius: 8px; min-width: 150px;"><div style="font-size: 32px;">👥</div><div style="font-size: 14px; color: var(--accent-green); margin-top: 8px;">● 民政数据</div><div style="font-size: 12px; color: var(--text-gray); margin-top: 4px;">已接入</div></div>
+                        <div style="text-align: center; padding: 15px 25px; background: rgba(0, 40, 80, 0.5); border-radius: 8px; min-width: 150px;"><div style="font-size: 32px;">🏠</div><div style="font-size: 14px; color: var(--accent-green); margin-top: 8px;">● 住建数据</div><div style="font-size: 12px; color: var(--text-gray); margin-top: 4px;">已接入</div></div>
+                        <div style="text-align: center; padding: 15px 25px; background: rgba(0, 40, 80, 0.5); border-radius: 8px; min-width: 150px;"><div style="font-size: 32px;">🚗</div><div style="font-size: 14px; color: var(--accent-green); margin-top: 8px;">● 交通数据</div><div style="font-size: 12px; color: var(--text-gray); margin-top: 4px;">已接入</div></div>
+                        <div style="text-align: center; padding: 15px 25px; background: rgba(0, 40, 80, 0.5); border-radius: 8px; min-width: 150px;"><div style="font-size: 32px;">📞</div><div style="font-size: 14px; color: var(--accent-orange); margin-top: 8px;">● 信访数据</div><div style="font-size: 12px; color: var(--text-gray); margin-top: 4px;">接入中</div></div>
+                    </div>
+                </div>
+                <div class="stats-row" style="flex: 1;">
+                    <div class="card"><div class="card-header"><div class="card-title">数据汇聚统计</div></div><div class="chart-container" style="height: calc(100% - 50px);"><canvas id="dataGatherChart"></canvas></div></div>
+                    <div class="card" style="flex: 1;"><div class="card-header"><div class="card-title">数据质量监控</div></div><div class="chart-container" style="height: calc(100% - 50px);"><canvas id="dataQualityChart"></canvas></div></div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+// ============================================================
+// 长白街道综治中心指挥平台 - 动态数据渲染引擎
+// 数据通过 API 动态加载，支持后台管理配置
+// ============================================================
+
+const API_BASE = '/changbai/api';
+
+// 全局状态
+let allData = {};
+let mapInitialized = {};         // 所有页面数据缓存
+let charts = {};          // Chart.js 实例
+let currentPage = 'overview';
+
+// ─── 工具函数 ───
+function $(id) { return document.getElementById(id); }
+
+// ─── 时间更新 ───
+function updateTime() {
+    const now = new Date();
+    const timeEl = $('currentTime');
+    const dateEl = $('currentDate');
+    if (timeEl) timeEl.textContent = now.toLocaleTimeString('zh-CN', { hour12: false });
+    if (dateEl) dateEl.textContent = now.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
+}
+updateTime();
+setInterval(updateTime, 1000);
+
+// ─── 加载所有数据 ───
+async function loadAllData() {
+    try {
+        const resp = await fetch(API_BASE + '/dashboard/all');
+        const json = await resp.json();
+        if (json.success) {
+            allData = json.data;
+            renderCurrentPage();
+        }
+    } catch (err) {
+        console.error('数据加载失败:', err);
+    }
+}
+
+// ─── 导航按钮 ───
+document.querySelectorAll('.nav-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const viewId = btn.dataset.view;
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
+        const targetView = $(viewId + 'View');
+        if (targetView) targetView.classList.add('active');
+        currentPage = viewId;
+        destroyAllCharts();
+        renderCurrentPage();
+    });
+});
+
+// ─── 渲染当前页面 ───
+function renderCurrentPage() {
+    if (!allData[currentPage]) return;
+    const d = allData[currentPage];
+
+    switch (currentPage) {
+        case 'overview': renderOverview(d); break;
+        case 'security': renderSecurity(d); break;
+        case 'governance': renderGovernance(d); break;
+        case 'cockpit': renderCockpit(d); break;
+        case 'emergency': renderEmergency(d); break;
+        case 'data-fusion': renderDataFusion(d); break;
+    }
+}
+
+// ─── 销毁所有 Chart.js 实例 ───
+function destroyAllCharts() {
+    Object.values(charts).forEach(c => { try { c.destroy(); } catch(e) {} });
+    charts = {};
+    mapInitialized = {};
+}
+
+// ─── 通用图表创建 ───
+function createChart(canvasId, config) {
+    const ctx = $(canvasId);
+    if (!ctx) return null;
+    const chart = new Chart(ctx, config);
+    charts[canvasId] = chart;
+    return chart;
+}
+
+// ============================================================
+// 页面渲染函数
+// ============================================================
+
+// ─── 综合态势 ───
+function renderOverview(d) {
+    // 统计卡片
+    const statGrids = document.querySelectorAll('#overviewView .stat-grid .stat-item');
+    d.stats.forEach((stat, i) => {
+        if (statGrids[i]) {
+            statGrids[i].querySelector('.stat-icon').textContent = stat.icon;
+            const valEl = statGrids[i].querySelector('.stat-value');
+            if (valEl) {
+                valEl.textContent = stat.value;
+                if (stat.animate) valEl.classList.add('realtime-value');
+            }
+            statGrids[i].querySelector('.stat-label').textContent = stat.label;
+            const trendEl = statGrids[i].querySelector('.stat-trend');
+            if (trendEl && stat.trend_text) {
+                trendEl.innerHTML = '<span>' + stat.trend_text + '</span>';
+                trendEl.className = 'stat-trend ' + (stat.trend_type === 'up' ? 'trend-up' : 'trend-down');
+            }
+        }
+    });
+
+    // 街道信息
+    const streetName = document.querySelector('#overviewView .street-name');
+    if (streetName) { streetName.textContent = d.street_info.name; }
+    const streetCode = document.querySelector('#overviewView .street-code');
+    if (streetCode) { streetCode.textContent = '区划代码：' + d.street_info.code; }
+    const infoRows = document.querySelectorAll('#overviewView .info-row');
+    d.street_info.details.forEach((item, i) => {
+        if (infoRows[i]) {
+            infoRows[i].querySelector('.info-label').textContent = item.label;
+            infoRows[i].querySelector('.info-value').textContent = item.value;
+        }
+    });
+
+    // 设备状态
+    const deviceItems = document.querySelectorAll('#overviewView .device-item');
+    d.device_status.forEach((dev, i) => {
+        if (deviceItems[i]) {
+            deviceItems[i].querySelector('.device-icon').textContent = dev.icon;
+            const cntEl = deviceItems[i].querySelector('.device-count');
+            if (cntEl) { cntEl.textContent = dev.count; cntEl.style.color = dev.color; }
+            deviceItems[i].querySelector('.device-label').textContent = dev.label;
+        }
+    });
+
+    // Leaflet 地图渲染
+    if (!window._overviewMap && d.map_markers) {
+        const mapEl = document.getElementById('overviewMap');
+        if (mapEl && mapEl.offsetParent !== null) {
+            // 确保容器有高度
+            const parentHeight = mapEl.parentElement.clientHeight;
+            if (parentHeight > 0) {
+                mapEl.style.height = parentHeight + 'px';
+            } else {
+                mapEl.style.height = '400px';
+            }
+            const center = d.map_center || [31.29, 121.535];
+            window._overviewMap = L.map('overviewMap', {
+                center: center,
+                zoom: d.map_zoom || 15,
+                zoomControl: true,
+                attributionControl: false
+            });
+            L.tileLayer('https://webrd01.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', {
+                maxZoom: 18
+            }).addTo(window._overviewMap);
+            setTimeout(function() { window._overviewMap.invalidateSize(); }, 200);
+
+            // 添加标记
+            const markerColors = { alert: '#ff4444', warning: '#ff9900', normal: '#00ff88' };
+            d.map_markers.forEach(function(m) {
+                const color = markerColors[m.type] || '#00d4ff';
+                const icon = L.divIcon({
+                    className: 'custom-marker',
+                    html: '<div style="width:16px;height:16px;border-radius:50%;background:' + color +
+                        ';border:2px solid #fff;box-shadow:0 0 10px ' + color + ';"></div>',
+                    iconSize: [16, 16],
+                    iconAnchor: [8, 8]
+                });
+                const marker = L.marker([m.lat || center[0] + (Math.random() - 0.5) * 0.02,
+                    m.lng || center[1] + (Math.random() - 0.5) * 0.02], { icon: icon })
+                    .addTo(window._overviewMap);
+                marker.bindPopup('<b>' + m.name + '</b><br>' + (m.desc || ''));
+            });
+        }
+    }
+
+    // 安全概览
+    const securityItems = document.querySelectorAll('#overviewView .security-item');
+    d.security_overview.forEach((item, i) => {
+        if (securityItems[i]) {
+            securityItems[i].querySelector('.security-icon').textContent = item.icon;
+            securityItems[i].querySelector('.security-value').textContent = item.value;
+            securityItems[i].querySelector('.security-label').textContent = item.label;
+        }
+    });
+
+    // 事件列表
+    const eventList = document.querySelector('#overviewView .event-list');
+    if (eventList) {
+        eventList.innerHTML = d.events.map(e => {
+            const cls = e.type === 'alert' ? 'alert' : (e.type === 'warning' ? 'warning' : '');
+            return '<div class="event-item ' + cls + '">' +
+                '<div class="event-icon">' + e.icon + '</div>' +
+                '<div class="event-content"><div class="event-title">' + e.title + '</div>' +
+                '<div class="event-meta"><span>' + e.time + '</span>' + 
+                (e.status ? '<span class="event-status">' + e.status + '</span>' : '') + '</div></div></div>';
+        }).join('');
+    }
+
+    // 治安指数图表
+    if (d.security_index_chart) {
+        createChart('securityIndexChart', {
+            type: 'line',
+            data: {
+                labels: d.security_index_chart.labels,
+                datasets: [{
+                    label: '治安指数', data: d.security_index_chart.data,
+                    borderColor: '#00d4ff', backgroundColor: 'rgba(0, 212, 255, 0.1)',
+                    fill: true, tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { y: { min: 70, max: 100, grid: { color: 'rgba(255,255,255,0.05)' } }, x: { grid: { display: false } } }
+            }
+        });
+    }
+}
+
+// ─── 安防监控 ───
+function renderSecurity(d) {
+    // 设备概况
+    const statGrids = document.querySelectorAll('#securityView .stat-grid .stat-item');
+    if (statGrids.length >= 4) {
+        const statData = [
+            { icon: '📹', value: d.device_stats.total, label: '监控点位', color: 'var(--accent-cyan)' },
+            { icon: '🖥', value: d.device_stats.online, label: '在线设备', color: 'var(--accent-green)' },
+            { icon: '🚨', value: d.device_stats.alert, label: '异常告警', color: 'var(--accent-red)' },
+            { icon: '📊', value: d.device_stats.online_rate + '%', label: '在线率', color: '' }
+        ];
+        statData.forEach((s, i) => {
+            if (statGrids[i]) {
+                statGrids[i].querySelector('.stat-icon').textContent = s.icon;
+                const valEl = statGrids[i].querySelector('.stat-value');
+                if (valEl) { valEl.textContent = s.value; if (s.color) valEl.style.color = s.color; }
+                statGrids[i].querySelector('.stat-label').textContent = s.label;
+            }
+        });
+    }
+
+    // 雪亮工程
+    const xueliangRows = document.querySelectorAll('#securityView .info-list .info-row');
+    d.xueliang_status.forEach((item, i) => {
+        if (xueliangRows[i]) {
+            xueliangRows[i].querySelector('.info-label').textContent = item.label;
+            const valEl = xueliangRows[i].querySelector('.info-value');
+            if (valEl) {
+                valEl.textContent = item.text;
+                valEl.style.color = item.status === 'online' ? 'var(--accent-green)' : 'var(--accent-orange)';
+            }
+        }
+    });
+
+    // 告警图表
+    if (d.alert_chart) {
+        createChart('alertChart', {
+            type: 'bar',
+            data: {
+                labels: d.alert_chart.labels,
+                datasets: [{
+                    label: '告警数', data: d.alert_chart.data,
+                    backgroundColor: 'rgba(255, 68, 68, 0.6)', borderColor: '#ff4444', borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { y: { grid: { color: 'rgba(255,255,255,0.05)' } }, x: { grid: { display: false } } }
+            }
+        });
+    }
+
+    // 监控画面
+    const videoGrid = document.querySelector('#securityView .video-grid');
+    if (videoGrid) {
+        videoGrid.innerHTML = d.cameras.map(cam => {
+            let mediaHtml;
+            if (cam.media_type === 'video' || cam.media_type === 'mp4') {
+                mediaHtml = '<video src="' + cam.img + '" autoplay loop muted playsinline ' +
+                    'style="width:100%;height:100%;object-fit:cover;"></video>';
+            } else if (cam.media_type === 'rtsp') {
+                mediaHtml = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--accent-orange);font-size:14px;">' +
+                    '📡 RTSP流接入中...</div>';
+            } else {
+                mediaHtml = '<img src="' + cam.img + '" alt="' + cam.name + '" ' +
+                    'style="width:100%;height:100%;object-fit:cover;" ' +
+                    'onerror="this.style.display=none">';
+            }
+            return '<div class="video-item">' +
+                '<div class="video-placeholder">' + mediaHtml + '</div>' +
+                '<div class="video-overlay">' +
+                '<span class="video-name">' + cam.id + ' ' + cam.name + '</span>' +
+                '<span class="video-status"><span class="status-dot"></span>' +
+                (cam.status === 'online' ? 'LIVE' : 'OFFLINE') + '</span></div></div>';
+        }).join('');
+    }
+
+    // 人脸识别图表
+    if (d.face_chart) {
+        createChart('faceChart', {
+            type: 'doughnut',
+            data: {
+                labels: d.face_chart.labels,
+                datasets: [{ data: d.face_chart.data, backgroundColor: ['#00ff88', '#ff9900', '#ff4444'], borderWidth: 0 }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom', labels: { padding: 15 } } }
+            }
+        });
+    }
+
+    // 最近抓拍
+    const capturesList = document.querySelector('#securityView .event-list');
+    if (capturesList) {
+        capturesList.innerHTML = d.recent_captures.map(c =>
+            '<div class="event-item">' +
+            '<div class="event-icon">👤</div>' +
+            '<div class="event-content"><div class="event-title">' + c.type + '</div>' +
+            '<div class="event-meta"><span>' + c.location + '</span><span>' + c.time + '</span></div></div></div>'
+        ).join('');
+    }
+}
+
+// ─── 社会综治 ───
+function renderGovernance(d) {
+    // 9+X 业务
+    const bizGrid = document.querySelector('#governanceView .business-grid');
+    if (bizGrid) {
+        bizGrid.innerHTML = d.business_9x.map(b =>
+            '<div class="business-item"><div class="business-icon">' + b.icon + '</div>' +
+            '<div class="business-name">' + b.name + '</div>' +
+            '<div class="business-count">' + b.count + '</div></div>'
+        ).join('');
+    }
+
+    // 重点人员
+    const peopleContainer = document.querySelector('#governanceView .key-people');
+    if (peopleContainer) {
+        peopleContainer.innerHTML = d.key_people.map(p =>
+            '<div class="people-card-item"><div class="people-avatar">🚶</div>' +
+            '<div class="people-detail"><div class="people-detail-name">' + p.name + '</div>' +
+            '<div class="people-detail-type">' + p.type + '</div></div>' +
+            '<span style="color:' + p.color + ';">' + p.count + '</span></div>'
+        ).join('');
+    }
+
+    // 事件处理流程
+    const stepsContainer = document.querySelector('#governanceView .workflow-steps');
+    if (stepsContainer) {
+        const line = '<div class="workflow-line"></div>';
+        const steps = d.workflow.map(w =>
+            '<div class="workflow-step"><div class="step-icon">' + w.icon + '</div>' +
+            '<div class="step-name">' + w.name + '</div>' +
+            '<div class="step-count">' + w.count + '</div></div>'
+        ).join('');
+        stepsContainer.innerHTML = line + steps;
+    }
+
+    // 网格分布
+    const gridBars = document.querySelector('#governanceView .grid-distribution');
+    if (gridBars) {
+        gridBars.innerHTML = d.grid_distribution.map(g =>
+            '<div class="grid-bar"><span class="grid-name">' + g.name + '</span>' +
+            '<div class="grid-bar-track"><div class="grid-bar-fill" style="width:' + g.value + '%;">' + g.value + '件</div></div></div>'
+        ).join('');
+    }
+
+    // 综治力量配置
+    const forceContainer = document.querySelector('#governanceView .people-analysis');
+    if (forceContainer) {
+        forceContainer.innerHTML = d.governance_resources.map(r =>
+            '<div class="people-card"><div class="people-title">' + r.title + '</div>' +
+            '<div class="people-stats">' + r.stats.map(s =>
+                '<div class="people-stat"><span class="label">' + s.label + '</span>' +
+                '<span class="value"' + (s.color ? ' style="color:' + s.color + ';"' : '') + '>' + s.value + '</span></div>'
+            ).join('') + '</div></div>'
+        ).join('');
+    }
+
+    // 矛盾纠纷表格
+    const disputeTable = document.querySelector('#governanceView .data-table tbody');
+    if (disputeTable) {
+        disputeTable.innerHTML = d.dispute_table.map(r =>
+            '<tr><td>' + r.type + '</td><td>' + r.count + '</td>' +
+            '<td style="color:' + r.status_color + ';">' + r.status + '</td></tr>'
+        ).join('');
+    }
+
+    // 矛盾纠纷图表
+    if (d.dispute_chart) {
+        createChart('disputeChart', {
+            type: 'bar',
+            data: {
+                labels: d.dispute_chart.labels,
+                datasets: [
+                    { label: '本月新增', data: d.dispute_chart.datasets[0].data, backgroundColor: 'rgba(0,212,255,0.6)', borderColor: '#00d4ff', borderWidth: 1 },
+                    { label: '已化解', data: d.dispute_chart.datasets[1].data, backgroundColor: 'rgba(0,255,136,0.6)', borderColor: '#00ff88', borderWidth: 1 }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } },
+                scales: { y: { grid: { color: 'rgba(255,255,255,0.05)' } }, x: { grid: { display: false } } }
+            }
+        });
+    }
+}
+
+// ─── 决策驾驶舱 ───
+function renderCockpit(d) {
+    // 进度圆环
+    const ringsContainer = document.querySelector('#cockpitView .progress-ring-container');
+    if (ringsContainer) {
+        ringsContainer.innerHTML = d.scores.map(s => {
+            const circumference = 2 * Math.PI * 42; // r=42
+            const offset = circumference - (s.value / 100) * circumference;
+            return '<div class="progress-ring-item">' +
+                '<div class="progress-ring">' +
+                '<svg width="100" height="100"><circle class="bg" cx="50" cy="50" r="42"/>' +
+                '<circle class="progress" cx="50" cy="50" r="42" stroke="' + s.color + '" ' +
+                'stroke-dasharray="' + circumference + '" stroke-dashoffset="' + offset + '"/></svg>' +
+                '<span class="value" style="color:' + s.color + ';">' + s.value + '</span></div>' +
+                '<div class="label">' + s.label + '</div></div>';
+        }).join('');
+    }
+
+    // 趋势图
+    if (d.trend_chart) {
+        createChart('trendChart', {
+            type: 'line',
+            data: {
+                labels: d.trend_chart.labels,
+                datasets: d.trend_chart.datasets.map(ds => ({
+                    label: ds.label, data: ds.data,
+                    borderColor: ds.color, backgroundColor: ds.color.replace(')', ',0.1)').replace('rgb', 'rgba'),
+                    fill: true, tension: 0.4
+                }))
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } },
+                scales: { y: { grid: { color: 'rgba(255,255,255,0.05)' } }, x: { grid: { display: false } } }
+            }
+        });
+    }
+
+    // 人口结构
+    const popContainer = document.querySelector('#cockpitView .people-analysis');
+    if (popContainer) {
+        popContainer.innerHTML = d.population.map(p =>
+            '<div class="people-card"><div class="people-title">' + p.title + '</div>' +
+            '<div class="people-stats">' + p.stats.map(s =>
+                '<div class="people-stat"><span class="label">' + s.label + '</span>' +
+                '<span class="value">' + s.value + '</span></div>'
+            ).join('') + '</div></div>'
+        ).join('');
+    }
+
+    // 三个饼图
+    if (d.pie_charts) {
+        const pieConfigs = [
+            { id: 'pieChart1', data: d.pie_charts[0] },
+            { id: 'pieChart2', data: d.pie_charts[1] },
+            { id: 'pieChart3', data: d.pie_charts[2] }
+        ];
+        pieConfigs.forEach(pc => {
+            if (pc.data) {
+                createChart(pc.id, {
+                    type: 'pie',
+                    data: {
+                        labels: pc.data.labels,
+                        datasets: [{ data: pc.data.data, backgroundColor: pc.data.colors }]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: {
+                            title: { display: true, text: pc.data.title, font: { size: 12 } },
+                            legend: { display: false }
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+    // 雷达图
+    if (d.radar_chart) {
+        createChart('cockpitChart', {
+            type: 'radar',
+            data: {
+                labels: d.radar_chart.labels,
+                datasets: d.radar_chart.datasets.map(ds => ({
+                    label: ds.label, data: ds.data,
+                    borderColor: ds.color,
+                    backgroundColor: ds.color.replace(')', ',0.2)').replace('rgb', 'rgba'),
+                    pointBackgroundColor: ds.color
+                }))
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } },
+                scales: { r: { beginAtZero: true, max: 100, ticks: { stepSize: 20 } } }
+            }
+        });
+    }
+
+    // 社区排名
+    const rankBars = document.querySelector('#cockpitView .grid-distribution');
+    if (rankBars) {
+        rankBars.innerHTML = d.community_rankings.map(r =>
+            '<div class="grid-bar"><span class="grid-name">' + r.name + '</span>' +
+            '<div class="grid-bar-track"><div class="grid-bar-fill" style="width:' + r.score + '%;' +
+            (r.color ? ' background: ' + r.color + ';' : '') + '">' + r.score + '分</div></div></div>'
+        ).join('');
+    }
+
+    // 运行指标
+    const metricGrid = document.querySelector('#cockpitView .stat-grid');
+    if (metricGrid) {
+        metricGrid.innerHTML = d.runtime_metrics.map(m =>
+            '<div class="stat-item"><div class="stat-icon">' + m.icon + '</div>' +
+            '<div class="stat-value">' + m.value + '</div>' +
+            '<div class="stat-label">' + m.label + '</div></div>'
+        ).join('');
+    }
+
+    // 风险预警
+    const riskList = document.querySelector('#cockpitView .event-list');
+    if (riskList) {
+        riskList.innerHTML = d.risk_warnings.map(r =>
+            '<div class="event-item ' + (r.icon === '⚠️' ? 'warning' : '') + '">' +
+            '<div class="event-icon">' + r.icon + '</div>' +
+            '<div class="event-content"><div class="event-title">' + r.title + '</div>' +
+            '<div class="event-meta"><span>' + r.desc + '</span></div></div></div>'
+        ).join('');
+    }
+}
+
+// ─── 应急指挥 ───
+function renderEmergency(d) {
+    // 预警级别
+    const levelBtns = document.querySelectorAll('#emergencyView .level-btn');
+    d.alert_levels.forEach((al, i) => {
+        if (levelBtns[i]) {
+            levelBtns[i].querySelector('.level-name').textContent = al.name;
+            levelBtns[i].querySelector('.level-count').textContent = al.count;
+            if (al.active) levelBtns[i].classList.add('active');
+            else levelBtns[i].classList.remove('active');
+        }
+    });
+
+    // 预警事件列表
+    const alertEventList = document.querySelector('#emergencyView .alert-panel .event-list');
+    if (alertEventList) {
+        alertEventList.innerHTML = d.alert_events.map(e =>
+            '<div class="event-item warning"><div class="event-icon">' + e.icon + '</div>' +
+            '<div class="event-content"><div class="event-title">' + e.title + '</div>' +
+            '<div class="event-meta"><span>' + e.time + '</span></div></div></div>'
+        ).join('');
+    }
+
+    // 应急资源
+    const resContainer = document.querySelector('#emergencyView .resource-distribution');
+    if (resContainer) {
+        resContainer.innerHTML = d.resources.map(r =>
+            '<div class="resource-item"><div class="resource-icon">' + r.icon + '</div>' +
+            '<div class="resource-num">' + r.count + '</div>' +
+            '<div class="resource-name">' + r.name + '</div></div>'
+        ).join('');
+    }
+
+    // Leaflet 应急地图渲染
+    if (!window._emergencyMap && d.map_markers) {
+        const mapEl = document.getElementById('emergencyMap');
+        if (mapEl && mapEl.offsetParent !== null) {
+            const parentHeight = mapEl.parentElement.clientHeight;
+            if (parentHeight > 0) {
+                mapEl.style.height = parentHeight + 'px';
+            } else {
+                mapEl.style.height = '400px';
+            }
+            const center = d.map_center || [31.29, 121.535];
+            window._emergencyMap = L.map('emergencyMap', {
+                center: center,
+                zoom: d.map_zoom || 14,
+                zoomControl: true,
+                attributionControl: false
+            });
+            L.tileLayer('https://webrd01.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', {
+                maxZoom: 18
+            }).addTo(window._emergencyMap);
+            setTimeout(function() { window._emergencyMap.invalidateSize(); }, 200);
+
+            d.map_markers.forEach(function(m) {
+                const color = m.color || '#00d4ff';
+                const icon = L.divIcon({
+                    className: 'custom-marker',
+                    html: '<div style="width:14px;height:14px;border-radius:50%;background:' + color +
+                        ';border:2px solid #fff;box-shadow:0 0 8px ' + color + ';"></div>',
+                    iconSize: [14, 14],
+                    iconAnchor: [7, 7]
+                });
+                const marker = L.marker([m.lat || center[0] + (Math.random() - 0.5) * 0.02,
+                    m.lng || center[1] + (Math.random() - 0.5) * 0.02], { icon: icon })
+                    .addTo(window._emergencyMap);
+                marker.bindPopup('<b>' + m.name + '</b>');
+            });
+        }
+    }
+
+    // 处置力量
+    const teamList = document.querySelector('#emergencyView .team-list');
+    if (teamList) {
+        teamList.innerHTML = d.dispatch_teams.map(t =>
+            '<div class="team-item"><div class="team-avatar">' + t.icon + '</div>' +
+            '<div class="team-info"><div class="team-name">' + t.name + '</div>' +
+            '<div class="team-status" style="color:' + t.status_color + ';">● ' + t.status + '</div>' +
+            '<div class="team-location">' + t.location + '</div></div>' +
+            '<button class="tool-btn">📞</button></div>'
+        ).join('');
+    }
+
+    // 通讯记录
+    const commList = document.querySelector('#emergencyView .event-list:not(.alert-panel .event-list)');
+    if (commList) {
+        commList.innerHTML = d.comm_records.map(c =>
+            '<div class="event-item"><div class="event-icon">' + c.icon + '</div>' +
+            '<div class="event-content"><div class="event-title">' + c.title + '</div>' +
+            '<div class="event-meta"><span>' + c.time + '</span><span>' + c.desc + '</span></div></div></div>'
+        ).join('');
+    }
+}
+
+// ─── 数据融合 ───
+function renderDataFusion(d) {
+    // 数据源状态
+    const srcContainer = document.querySelector('#dataView .card:nth-child(1) > div:nth-child(2)');
+    if (srcContainer) {
+        srcContainer.innerHTML = d.data_sources.map(s =>
+            '<div style="text-align: center; padding: 15px 25px; background: rgba(0, 40, 80, 0.5); border-radius: 8px; min-width: 150px;">' +
+            '<div style="font-size: 32px;">' + s.icon + '</div>' +
+            '<div style="font-size: 14px; margin-top: 8px;' +
+            (s.status === 'online' ? 'color: var(--accent-green);' : 'color: var(--accent-orange);') + '">● ' + s.name + '</div>' +
+            '<div style="font-size: 12px; color: var(--text-gray); margin-top: 4px;">' + s.status_text + '</div></div>'
+        ).join('');
+    }
+
+    // 数据汇聚图表
+    if (d.data_gather_chart) {
+        createChart('dataGatherChart', {
+            type: 'bar',
+            data: {
+                labels: d.data_gather_chart.labels,
+                datasets: [{
+                    label: '数据量(万条)', data: d.data_gather_chart.data,
+                    backgroundColor: 'rgba(0, 212, 255, 0.6)', borderColor: '#00d4ff', borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                indexAxis: 'y',
+                plugins: { legend: { display: false } },
+                scales: { x: { grid: { color: 'rgba(255,255,255,0.05)' } }, y: { grid: { display: false } } }
+            }
+        });
+    }
+
+    // 数据质量图表
+    if (d.data_quality_chart) {
+        createChart('dataQualityChart', {
+            type: 'line',
+            data: {
+                labels: d.data_quality_chart.labels,
+                datasets: d.data_quality_chart.datasets.map(ds => ({
+                    label: ds.label, data: ds.data,
+                    borderColor: ds.color,
+                    backgroundColor: ds.color.replace(')', ',0.1)').replace('rgb', 'rgba'),
+                    fill: true, tension: 0.4
+                }))
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } },
+                scales: { y: { min: 80, max: 100, grid: { color: 'rgba(255,255,255,0.05)' } }, x: { grid: { display: false } } }
+            }
+        });
+    }
+}
+
+// ─── 实时数据刷新（仅随机数值变化） ───
+function updateRealtimeData() {
+    const eventCount = document.querySelector('#overviewView .stat-value.realtime-value');
+    if (eventCount && allData.overview) {
+        eventCount.textContent = allData.overview.stats[0].value + Math.floor(Math.random() * 10) - 5;
+    }
+}
+setInterval(updateRealtimeData, 5000);
+
+// ─── 启动：加载数据并渲染 ───
+Chart.defaults.color = '#b0b8c4';
+Chart.defaults.borderColor = 'rgba(0, 212, 255, 0.1)';
+loadAllData();
+</script>
+
+<style>
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.inland-security-footer {
+  position: fixed;
+  z-index: 10;
+  bottom: 0;
+  right: 0;
+  width: fit-content;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.tooltip-container {
+  position: relative;
+}
+
+.trigger-content {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  background-color: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.minimax-link {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 300;
+  color: #adadad;
+  text-decoration: none;
+}
+
+.minimax-link:visited {
+  color: #adadad;
+}
+
+.minimax-link:hover {
+  color: #666666;
+}
+
+.tooltip-content {
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  padding-bottom: 16px; /* 8px 内容间距 + 8px 用于鼠标移动的透明区域 */
+  font-size: 12px;
+  line-height: 17px;
+  background-color: #fafafa;
+  border-radius: 12px;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  color: #171717;
+}
+
+/* 创建透明的连接区域，让鼠标可以平滑移动到 tooltip */
+.tooltip-content::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 0;
+  right: 0;
+  height: 16px;
+}
+
+.tooltip-container:hover .tooltip-content {
+  display: flex;
+}
+
+.info-section {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+.beian-link {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: #171717;
+}
+
+.beian-icon {
+  width: 14px;
+  height: 14px;
+  margin-right: 2px;
+}
+
+.underline-text {
+  color: #171717;
+  text-decoration: underline;
+}
+
+.underline-text:hover {
+  color: #000000;
+}
+
+/* 深色模式支持 */
+@media (prefers-color-scheme: dark) {
+  .trigger-content {
+    background-color: transparent;
+  }
+
+  .minimax-link,
+  .minimax-link:visited {
+    color: #666666;
+  }
+
+  .minimax-link:hover {
+    color: #adadad;
+  }
+
+  .tooltip-content {
+    background-color: #262626;
+    color: #ededed;
+  }
+
+  .beian-link,
+  .underline-text {
+    color: #ededed;
+  }
+
+  .underline-text:hover {
+    color: #ffffff;
+  }
+}
+
+</style>
+<div class="inland-security-footer">
+  <div class="tooltip-container">
+    <div class="trigger-content">
+      <a href="https://www.minimaxi.com/" target="_blank" rel="noreferrer" class="minimax-link">
+        <span>© 2026 MiniMax</span>
+      </a>
+    </div>
+    <div class="tooltip-content">
+      <section class="info-section">
+        <span>上海稀宇科技有限公司</span>
+      </section>
+
+      <section class="info-section">
+        <a class="beian-link" href="https://www.beian.gov.cn/portal/registerSystemInfo?recordcode=31010402010179" target="_blank" rel="noreferrer">
+          <img alt="hailuo-beian-icon" src="https://cdn.hailuoai.com/hailuo-video-web/public_assets/223037d3-79fd-4db0-a456-749f38a6a14b.png" class="beian-icon">
+          <span class="underline-text">沪公网安备31010402010179号</span>
+        </a>
+        <a href="https://beian.miit.gov.cn/" target="_blank" rel="noreferrer" class="underline-text">
+          沪ICP备2023003282号-38
+        </a>
+      </section>
+
+      <section class="info-section">
+        <span>模型名称：MiniMax</span>
+        <span>备案号：Shanghai-MiniMax-202505230046</span>
+      </section>
+
+      <section class="info-section">
+        <a href="https://agent.minimaxi.com/doc/zh/terms-of-service.html" target="_blank" rel="noreferrer" class="underline-text">
+          用户协议
+        </a>
+        <a href="https://agent.minimaxi.com/doc/zh/privacy-policy.html" target="_blank" rel="noreferrer" class="underline-text">
+          隐私政策
+        </a>
+      </section>
+    </div>
+  </div>
+</div>
+
+
+<script>
+/**
+ * Iframe 元素高亮注入脚本
+ * 需要在目标网站中引入此脚本来支持跨域 iframe 高亮功能
+ *
+ * 使用方法：
+ * 1. 将此脚本添加到目标网站的 HTML 中
+ * 2. 或通过浏览器扩展、用户脚本等方式注入
+ */
+
+(function () {
+  "use strict";
+
+  // 检查是否在 iframe 中
+  if (window.self === window.top) {
+    return; // 不在 iframe 中，不执行
+  }
+
+  // 检查是否已经初始化过
+  if (window.__iframeHighlightInitialized) {
+    return;
+  }
+  window.__iframeHighlightInitialized = true;
+  console.log("Iframe 高亮脚本已加载");
+
+  // 创建高亮覆盖层
+  var overlay = document.createElement("div");
+  overlay.id = "iframe-highlight-overlay";
+  overlay.style.cssText = "\n    position: fixed;\n    top: 0;\n    left: 0;\n    width: 100vw;\n    height: 100vh;\n    pointer-events: none;\n    z-index: 999999;\n    overflow: hidden;\n  ";
+
+  // 创建悬停高亮框（虚线边框）
+  var highlightBox = document.createElement("div");
+  highlightBox.id = "iframe-highlight-box";
+  highlightBox.style.cssText = "\n    position: absolute;\n    border: 2px dashed #007AFF;\n    background: rgba(0, 122, 255, 0.08);\n    pointer-events: none;\n    display: none;\n    transition: all 0.1s ease;\n    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.8);\n    border-radius: 2px;\n  ";
+
+  // 创建选中节点的常驻高亮框（实线边框）
+  var selectedBox = document.createElement("div");
+  selectedBox.id = "iframe-selected-box";
+  selectedBox.style.cssText = "\n    position: absolute;\n    border: 2px solid #007AFF;\n    pointer-events: none;\n    display: none;\n    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.9), 0 0 8px rgba(255, 107, 53, 0.4);\n    border-radius: 2px;\n    z-index: 1000000;\n  ";
+
+  // 创建悬停标签显示
+  var tagLabel = document.createElement("div");
+  tagLabel.id = "iframe-tag-label";
+  tagLabel.style.cssText = "\n    position: absolute;\n    background: #007AFF;\n    color: white;\n    padding: 2px 6px;\n    font-size: 11px;\n    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;\n    border-radius: 2px;\n    pointer-events: none;\n    display: none;\n    white-space: nowrap;\n    z-index: 1000001;\n    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);\n    font-weight: 500;\n  ";
+
+  // 创建选中节点标签
+  var selectedLabel = document.createElement("div");
+  selectedLabel.id = "iframe-selected-label";
+  selectedLabel.style.cssText = "\n    position: absolute;\n    background: #007AFF;\n    color: white;\n    padding: 3px 8px;\n    font-size: 11px;\n    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;\n    border-radius: 3px;\n    pointer-events: none;\n    display: none;\n    white-space: nowrap;\n    z-index: 1000002;\n    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);\n    font-weight: 600;\n  ";
+  overlay.appendChild(highlightBox);
+  overlay.appendChild(selectedBox);
+  overlay.appendChild(tagLabel);
+  overlay.appendChild(selectedLabel);
+  document.body.appendChild(overlay);
+
+  // 存储当前选中的元素
+  var selectedElement = null;
+  var highlightEnabled = false;
+
+  // 更新选中元素的高亮显示
+  function updateSelectedHighlight(element) {
+    console.log("updateSelectedHighlight called with:", element);
+    if (!element) {
+      selectedBox.style.display = "none";
+      selectedLabel.style.display = "none";
+      selectedElement = null;
+      console.log("Cleared selected highlight");
+      return;
+    }
+    selectedElement = element;
+    var rect = element.getBoundingClientRect();
+    console.log("Selected element rect:", rect);
+
+    // 更新选中高亮框位置
+    selectedBox.style.display = "block";
+    selectedBox.style.left = "".concat(rect.left - 2, "px");
+    selectedBox.style.top = "".concat(rect.top - 2, "px");
+    selectedBox.style.width = "".concat(rect.width + 4, "px");
+    selectedBox.style.height = "".concat(rect.height + 4, "px");
+
+    // 更新选中标签位置和内容
+    selectedLabel.style.display = "block";
+    selectedLabel.textContent = "\u2713 <".concat(element.tagName.toLowerCase(), ">");
+
+    // 计算标签位置，确保不超出视窗
+    var labelTop = rect.top - 28;
+    var labelLeft = rect.left;
+
+    // 如果标签会超出顶部，显示在元素下方
+    if (labelTop < 5) {
+      labelTop = rect.bottom + 5;
+    }
+
+    // 如果标签会超出右侧，向左调整
+    var labelWidth = selectedLabel.offsetWidth || 100; // 预估宽度
+    if (labelLeft + labelWidth > window.innerWidth - 10) {
+      labelLeft = window.innerWidth - labelWidth - 10;
+    }
+    selectedLabel.style.left = "".concat(Math.max(5, labelLeft), "px");
+    selectedLabel.style.top = "".concat(labelTop, "px");
+    console.log("Selected highlight positioned at:", {
+      left: selectedBox.style.left,
+      top: selectedBox.style.top,
+      width: selectedBox.style.width,
+      height: selectedBox.style.height
+    });
+  }
+  function getElementSelector(element) {
+    if (!(element instanceof Element)) throw new Error('Argument must be a DOM element');
+    var segments = [];
+    var current = element;
+    while (current !== document.documentElement) {
+      var selector = '';
+      // 优先检查唯一ID
+      if (current.id && document.querySelectorAll("#".concat(current.id)).length === 1) {
+        segments.unshift("#".concat(current.id));
+        break; // ID唯一，无需继续向上
+      }
+
+      // 生成类名选择器（取第一个有效类名）
+      var classes = Array.from(current.classList).filter(function (c) {
+        return !c.startsWith('js-');
+      });
+      var className = classes.length > 0 ? ".".concat(classes[0]) : '';
+
+      // 生成位置索引（nth-child）
+      var tag = current.tagName.toLowerCase();
+      if (!className) {
+        var siblings = Array.from(current.parentNode.children);
+        var index = siblings.findIndex(function (el) {
+          return el === current;
+        }) + 1;
+        selector = "".concat(tag, ":nth-child(").concat(index, ")");
+      } else {
+        selector = className;
+      }
+      segments.unshift(selector);
+      current = current.parentElement;
+    }
+
+    // 处理根元素
+    if (current === document.documentElement) {
+      segments.unshift('html');
+    }
+    return segments.join(' > ');
+  }
+
+  // 获取元素文本内容
+  function getElementText(element) {
+    var _element$textContent;
+    if (element.tagName === "INPUT") {
+      return element.value || element.placeholder || "";
+    }
+    if (element.tagName === "TEXTAREA") {
+      return element.value || element.placeholder || "";
+    }
+    var text = ((_element$textContent = element.textContent) === null || _element$textContent === void 0 ? void 0 : _element$textContent.trim()) || "";
+    return text.length > 50 ? text.substring(0, 50) + "..." : text;
+  }
+
+  // 获取元素属性信息
+  function getElementAttributes(element) {
+    var attrs = {};
+    for (var i = 0; i < element.attributes.length; i++) {
+      var attr = element.attributes[i];
+      attrs[attr.name] = attr.value;
+    }
+    return attrs;
+  }
+
+  // 鼠标悬停事件处理
+  function handleMouseOver(e) {
+    if (!highlightEnabled) return;
+    var target = e.target;
+    if (!target || target === overlay || target === highlightBox || target === tagLabel || target === selectedBox || target === selectedLabel) {
+      return;
+    }
+
+    // 避免高亮 html 和 body 元素
+    if (target === document.documentElement || target === document.body) {
+      return;
+    }
+
+    // 如果是已选中的元素，不显示悬停高亮
+    if (target === selectedElement) {
+      highlightBox.style.display = "none";
+      tagLabel.style.display = "none";
+      return;
+    }
+    var rect = target.getBoundingClientRect();
+    var selector = getElementSelector(target);
+    var text = getElementText(target);
+    var attributes = getElementAttributes(target);
+
+    // 更新悬停高亮框位置
+    highlightBox.style.display = "block";
+    highlightBox.style.left = "".concat(rect.left - 2, "px");
+    highlightBox.style.top = "".concat(rect.top - 2, "px");
+    highlightBox.style.width = "".concat(rect.width + 4, "px");
+    highlightBox.style.height = "".concat(rect.height + 4, "px");
+
+    // 更新标签位置和内容
+    tagLabel.style.display = "block";
+    tagLabel.textContent = "<".concat(target.tagName.toLowerCase(), ">");
+
+    // 计算标签位置，确保不超出视窗
+    var labelTop = rect.top - 22;
+    var labelLeft = rect.left;
+
+    // 如果标签会超出顶部，显示在元素下方
+    if (labelTop < 0) {
+      labelTop = rect.bottom + 5;
+    }
+
+    // 如果标签会超出右侧，向左调整
+    if (labelLeft + tagLabel.offsetWidth > window.innerWidth) {
+      labelLeft = window.innerWidth - tagLabel.offsetWidth - 5;
+    }
+    tagLabel.style.left = "".concat(Math.max(0, labelLeft), "px");
+    tagLabel.style.top = "".concat(labelTop, "px");
+
+    // 发送消息到父窗口
+    var elementInfo = {
+      tagName: target.tagName.toLowerCase(),
+      rect: {
+        left: rect.left,
+        top: rect.top,
+        right: rect.right,
+        bottom: rect.bottom,
+        width: rect.width,
+        height: rect.height,
+        x: rect.x,
+        y: rect.y
+      },
+      selector: selector,
+      text: text,
+      attributes: attributes,
+      url: window.location.href,
+      path: window.location.pathname,
+      timestamp: Date.now()
+    };
+    try {
+      window.parent.postMessage({
+        type: "iframe-element-hover",
+        data: elementInfo,
+        source: "iframe-highlight-injector"
+      }, "*");
+    } catch (error) {
+      console.warn("无法发送消息到父窗口:", error);
+    }
+  }
+
+  // 鼠标离开事件处理
+  function handleMouseOut(e) {
+    if (!highlightEnabled) return;
+    var relatedTarget = e.relatedTarget;
+
+    // 如果鼠标移动到高亮相关元素上，不隐藏高亮
+    if (relatedTarget && (relatedTarget === highlightBox || relatedTarget === tagLabel || relatedTarget === overlay || relatedTarget === selectedBox || relatedTarget === selectedLabel)) {
+      return;
+    }
+    highlightBox.style.display = "none";
+    tagLabel.style.display = "none";
+    try {
+      window.parent.postMessage({
+        type: "iframe-element-hover",
+        data: null,
+        source: "iframe-highlight-injector"
+      }, "*");
+    } catch (error) {
+      console.warn("无法发送消息到父窗口:", error);
+    }
+  }
+
+  // 点击事件处理
+  function handleClick(e) {
+    var target = e.target;
+    if (!target || target === overlay || target === highlightBox || target === tagLabel || target === selectedBox || target === selectedLabel) {
+      return;
+    }
+
+    // 避免处理 html 和 body 元素
+    if (target === document.documentElement || target === document.body) {
+      return;
+    }
+
+    // 检查是否是交互元素，这些元素需要保留默认行为
+    var isInteractiveElement = ['input', 'textarea', 'select', 'button', 'a'].includes(target.tagName.toLowerCase());
+
+    // 如果高亮功能启用，对于非交互元素阻止默认行为和事件传播
+    if (highlightEnabled) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    var rect = target.getBoundingClientRect();
+    var selector = getElementSelector(target);
+    var text = getElementText(target);
+    var attributes = getElementAttributes(target);
+    console.log("Element clicked:", {
+      tagName: target.tagName,
+      selector: selector,
+      rect: rect
+    });
+
+    // 立即更新选中高亮
+    updateSelectedHighlight(target);
+
+    // 隐藏悬停高亮，因为现在是选中状态
+    highlightBox.style.display = "none";
+    tagLabel.style.display = "none";
+    var elementInfo = {
+      tagName: target.tagName.toLowerCase(),
+      rect: {
+        left: rect.left,
+        top: rect.top,
+        right: rect.right,
+        bottom: rect.bottom,
+        width: rect.width,
+        height: rect.height,
+        x: rect.x,
+        y: rect.y
+      },
+      selector: selector,
+      text: text,
+      attributes: attributes,
+      url: window.location.href,
+      path: window.location.pathname,
+      timestamp: Date.now()
+    };
+    try {
+      window.parent.postMessage({
+        type: "iframe-element-click",
+        data: elementInfo,
+        source: "iframe-highlight-injector"
+      }, "*");
+    } catch (error) {
+      console.warn("无法发送消息到父窗口:", error);
+    }
+  }
+
+  // 监听来自父窗口的消息
+  function handleParentMessage(event) {
+    console.log("Received message from parent:", event.data);
+    if (event.data.type === "iframe-highlight-toggle") {
+      var enabled = event.data.enabled;
+      console.log("Highlight toggle:", enabled);
+      if (enabled) {
+        enableHighlight();
+      } else {
+        disableHighlight();
+      }
+    } else if (event.data.type === "enable-iframe-highlight") {
+      console.log("Enable iframe highlight");
+      enableHighlight();
+    } else if (event.data.type === "disable-iframe-highlight") {
+      console.log("Disable iframe highlight");
+      disableHighlight();
+    } else if (event.data.type === "toggle-iframe-highlight") {
+      var _enabled = event.data.enabled !== undefined ? event.data.enabled : !highlightEnabled;
+      console.log("Toggle iframe highlight to:", _enabled);
+      if (_enabled) {
+        enableHighlight();
+      } else {
+        disableHighlight();
+      }
+    } else if (event.data.type === "update-selected-element") {
+      var selector = event.data.selector;
+      console.log("Update selected element with selector:", selector);
+      if (selector) {
+        try {
+          var element = document.querySelector(selector);
+          console.log("Found element by selector:", element);
+          updateSelectedHighlight(element);
+        } catch (error) {
+          console.warn("Failed to select element:", error);
+          updateSelectedHighlight(null);
+        }
+      } else {
+        updateSelectedHighlight(null);
+      }
+    } else if (event.data.type === "clear-selected-element") {
+      console.log("Clear selected element");
+      updateSelectedHighlight(null);
+    }
+  }
+
+  // 启用高亮功能
+  function enableHighlight() {
+    console.log("Enabling highlight");
+    document.addEventListener("mouseover", handleMouseOver, true);
+    document.addEventListener("mouseout", handleMouseOut, true);
+    document.addEventListener("click", handleClick, true);
+    highlightEnabled = true;
+    overlay.style.display = "block";
+  }
+
+  // 禁用高亮功能
+  function disableHighlight() {
+    console.log("Disabling highlight");
+    highlightEnabled = false;
+    // 保持事件监听器，但通过 highlightEnabled 变量控制行为
+    // 这样可以保留选中状态的显示
+    highlightBox.style.display = "none";
+    tagLabel.style.display = "none";
+    // 不隐藏 selectedBox 和 selectedLabel，保留选中状态
+  }
+
+  // 完全禁用高亮功能（移除所有监听器）
+  function fullyDisableHighlight() {
+    console.log("Fully disabling highlight");
+    highlightEnabled = false;
+    document.removeEventListener("mouseover", handleMouseOver, true);
+    document.removeEventListener("mouseout", handleMouseOut, true);
+    document.removeEventListener("click", handleClick, true);
+    overlay.style.display = "none";
+    highlightBox.style.display = "none";
+    tagLabel.style.display = "none";
+    selectedBox.style.display = "none";
+    selectedLabel.style.display = "none";
+  }
+
+  // 添加事件监听
+  enableHighlight();
+  window.addEventListener("message", handleParentMessage);
+
+  // 暴露全局函数供外部调用
+  window.__iframeHighlightControl = {
+    enable: enableHighlight,
+    disable: disableHighlight,
+    fullyDisable: fullyDisableHighlight,
+    isEnabled: function isEnabled() {
+      return highlightEnabled;
+    },
+    getSelectedElement: function getSelectedElement() {
+      return selectedElement;
+    },
+    updateSelected: updateSelectedHighlight,
+    // 通过消息发送开关控制
+    sendToggleMessage: function sendToggleMessage(enabled) {
+      window.parent.postMessage({
+        type: 'iframe-highlight-status',
+        enabled: enabled || highlightEnabled,
+        source: 'iframe-highlight-injector'
+      }, '*');
+    }
+  };
+
+  // 通知父窗口脚本已加载
+  try {
+    window.parent.postMessage({
+      type: "iframe-highlight-ready",
+      data: {
+        url: window.location.href,
+        userAgent: navigator.userAgent,
+        timestamp: Date.now()
+      },
+      source: "iframe-highlight-injector"
+    }, "*");
+  } catch (error) {
+    console.warn("无法发送就绪消息到父窗口:", error);
+  }
+
+  // 清理函数
+  window.__iframeHighlightCleanup = function () {
+    fullyDisableHighlight();
+    window.removeEventListener("message", handleParentMessage);
+    if (overlay.parentElement) {
+      overlay.parentElement.removeChild(overlay);
+    }
+    delete window.__iframeHighlightInitialized;
+    delete window.__iframeHighlightCleanup;
+  };
+})();
+
+</script>
+
+<script>
+/**
+ * Iframe 元素高亮注入脚本
+ * 需要在目标网站中引入此脚本来支持跨域 iframe 高亮功能
+ *
+ * 使用方法：
+ * 1. 将此脚本添加到目标网站的 HTML 中
+ * 2. 或通过浏览器扩展、用户脚本等方式注入
+ */
+
+(function () {
+  "use strict";
+
+  // 检查是否在 iframe 中
+  if (window.self === window.top) {
+    return; // 不在 iframe 中，不执行
+  }
+
+  // 检查是否已经初始化过
+  if (window.__iframeHighlightInitialized) {
+    return;
+  }
+  window.__iframeHighlightInitialized = true;
+  console.log("Iframe 高亮脚本已加载");
+
+  // 创建高亮覆盖层
+  var overlay = document.createElement("div");
+  overlay.id = "iframe-highlight-overlay";
+  overlay.style.cssText = "\n    position: fixed;\n    top: 0;\n    left: 0;\n    width: 100vw;\n    height: 100vh;\n    pointer-events: none;\n    z-index: 999999;\n    overflow: hidden;\n  ";
+
+  // 创建悬停高亮框（虚线边框）
+  var highlightBox = document.createElement("div");
+  highlightBox.id = "iframe-highlight-box";
+  highlightBox.style.cssText = "\n    position: absolute;\n    border: 2px dashed #007AFF;\n    background: rgba(0, 122, 255, 0.08);\n    pointer-events: none;\n    display: none;\n    transition: all 0.1s ease;\n    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.8);\n    border-radius: 2px;\n  ";
+
+  // 创建选中节点的常驻高亮框（实线边框）
+  var selectedBox = document.createElement("div");
+  selectedBox.id = "iframe-selected-box";
+  selectedBox.style.cssText = "\n    position: absolute;\n    border: 2px solid #007AFF;\n    pointer-events: none;\n    display: none;\n    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.9), 0 0 8px rgba(255, 107, 53, 0.4);\n    border-radius: 2px;\n    z-index: 1000000;\n  ";
+
+  // 创建悬停标签显示
+  var tagLabel = document.createElement("div");
+  tagLabel.id = "iframe-tag-label";
+  tagLabel.style.cssText = "\n    position: absolute;\n    background: #007AFF;\n    color: white;\n    padding: 2px 6px;\n    font-size: 11px;\n    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;\n    border-radius: 2px;\n    pointer-events: none;\n    display: none;\n    white-space: nowrap;\n    z-index: 1000001;\n    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);\n    font-weight: 500;\n  ";
+
+  // 创建选中节点标签
+  var selectedLabel = document.createElement("div");
+  selectedLabel.id = "iframe-selected-label";
+  selectedLabel.style.cssText = "\n    position: absolute;\n    background: #007AFF;\n    color: white;\n    padding: 3px 8px;\n    font-size: 11px;\n    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;\n    border-radius: 3px;\n    pointer-events: none;\n    display: none;\n    white-space: nowrap;\n    z-index: 1000002;\n    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);\n    font-weight: 600;\n  ";
+  overlay.appendChild(highlightBox);
+  overlay.appendChild(selectedBox);
+  overlay.appendChild(tagLabel);
+  overlay.appendChild(selectedLabel);
+  document.body.appendChild(overlay);
+
+  // 存储当前选中的元素
+  var selectedElement = null;
+  var highlightEnabled = false;
+
+  // 更新选中元素的高亮显示
+  function updateSelectedHighlight(element) {
+    console.log("updateSelectedHighlight called with:", element);
+    if (!element) {
+      selectedBox.style.display = "none";
+      selectedLabel.style.display = "none";
+      selectedElement = null;
+      console.log("Cleared selected highlight");
+      return;
+    }
+    selectedElement = element;
+    var rect = element.getBoundingClientRect();
+    console.log("Selected element rect:", rect);
+
+    // 更新选中高亮框位置
+    selectedBox.style.display = "block";
+    selectedBox.style.left = "".concat(rect.left - 2, "px");
+    selectedBox.style.top = "".concat(rect.top - 2, "px");
+    selectedBox.style.width = "".concat(rect.width + 4, "px");
+    selectedBox.style.height = "".concat(rect.height + 4, "px");
+
+    // 更新选中标签位置和内容
+    selectedLabel.style.display = "block";
+    selectedLabel.textContent = "\u2713 <".concat(element.tagName.toLowerCase(), ">");
+
+    // 计算标签位置，确保不超出视窗
+    var labelTop = rect.top - 28;
+    var labelLeft = rect.left;
+
+    // 如果标签会超出顶部，显示在元素下方
+    if (labelTop < 5) {
+      labelTop = rect.bottom + 5;
+    }
+
+    // 如果标签会超出右侧，向左调整
+    var labelWidth = selectedLabel.offsetWidth || 100; // 预估宽度
+    if (labelLeft + labelWidth > window.innerWidth - 10) {
+      labelLeft = window.innerWidth - labelWidth - 10;
+    }
+    selectedLabel.style.left = "".concat(Math.max(5, labelLeft), "px");
+    selectedLabel.style.top = "".concat(labelTop, "px");
+    console.log("Selected highlight positioned at:", {
+      left: selectedBox.style.left,
+      top: selectedBox.style.top,
+      width: selectedBox.style.width,
+      height: selectedBox.style.height
+    });
+  }
+  function getElementSelector(element) {
+    if (!(element instanceof Element)) throw new Error('Argument must be a DOM element');
+    var segments = [];
+    var current = element;
+    while (current !== document.documentElement) {
+      var selector = '';
+      // 优先检查唯一ID
+      if (current.id && document.querySelectorAll("#".concat(current.id)).length === 1) {
+        segments.unshift("#".concat(current.id));
+        break; // ID唯一，无需继续向上
+      }
+
+      // 生成类名选择器（取第一个有效类名）
+      var classes = Array.from(current.classList).filter(function (c) {
+        return !c.startsWith('js-');
+      });
+      var className = classes.length > 0 ? ".".concat(classes[0]) : '';
+
+      // 生成位置索引（nth-child）
+      var tag = current.tagName.toLowerCase();
+      if (!className) {
+        var siblings = Array.from(current.parentNode.children);
+        var index = siblings.findIndex(function (el) {
+          return el === current;
+        }) + 1;
+        selector = "".concat(tag, ":nth-child(").concat(index, ")");
+      } else {
+        selector = className;
+      }
+      segments.unshift(selector);
+      current = current.parentElement;
+    }
+
+    // 处理根元素
+    if (current === document.documentElement) {
+      segments.unshift('html');
+    }
+    return segments.join(' > ');
+  }
+
+  // 获取元素文本内容
+  function getElementText(element) {
+    var _element$textContent;
+    if (element.tagName === "INPUT") {
+      return element.value || element.placeholder || "";
+    }
+    if (element.tagName === "TEXTAREA") {
+      return element.value || element.placeholder || "";
+    }
+    var text = ((_element$textContent = element.textContent) === null || _element$textContent === void 0 ? void 0 : _element$textContent.trim()) || "";
+    return text.length > 50 ? text.substring(0, 50) + "..." : text;
+  }
+
+  // 获取元素属性信息
+  function getElementAttributes(element) {
+    var attrs = {};
+    for (var i = 0; i < element.attributes.length; i++) {
+      var attr = element.attributes[i];
+      attrs[attr.name] = attr.value;
+    }
+    return attrs;
+  }
+
+  // 鼠标悬停事件处理
+  function handleMouseOver(e) {
+    if (!highlightEnabled) return;
+    var target = e.target;
+    if (!target || target === overlay || target === highlightBox || target === tagLabel || target === selectedBox || target === selectedLabel) {
+      return;
+    }
+
+    // 避免高亮 html 和 body 元素
+    if (target === document.documentElement || target === document.body) {
+      return;
+    }
+
+    // 如果是已选中的元素，不显示悬停高亮
+    if (target === selectedElement) {
+      highlightBox.style.display = "none";
+      tagLabel.style.display = "none";
+      return;
+    }
+    var rect = target.getBoundingClientRect();
+    var selector = getElementSelector(target);
+    var text = getElementText(target);
+    var attributes = getElementAttributes(target);
+
+    // 更新悬停高亮框位置
+    highlightBox.style.display = "block";
+    highlightBox.style.left = "".concat(rect.left - 2, "px");
+    highlightBox.style.top = "".concat(rect.top - 2, "px");
+    highlightBox.style.width = "".concat(rect.width + 4, "px");
+    highlightBox.style.height = "".concat(rect.height + 4, "px");
+
+    // 更新标签位置和内容
+    tagLabel.style.display = "block";
+    tagLabel.textContent = "<".concat(target.tagName.toLowerCase(), ">");
+
+    // 计算标签位置，确保不超出视窗
+    var labelTop = rect.top - 22;
+    var labelLeft = rect.left;
+
+    // 如果标签会超出顶部，显示在元素下方
+    if (labelTop < 0) {
+      labelTop = rect.bottom + 5;
+    }
+
+    // 如果标签会超出右侧，向左调整
+    if (labelLeft + tagLabel.offsetWidth > window.innerWidth) {
+      labelLeft = window.innerWidth - tagLabel.offsetWidth - 5;
+    }
+    tagLabel.style.left = "".concat(Math.max(0, labelLeft), "px");
+    tagLabel.style.top = "".concat(labelTop, "px");
+
+    // 发送消息到父窗口
+    var elementInfo = {
+      tagName: target.tagName.toLowerCase(),
+      rect: {
+        left: rect.left,
+        top: rect.top,
+        right: rect.right,
+        bottom: rect.bottom,
+        width: rect.width,
+        height: rect.height,
+        x: rect.x,
+        y: rect.y
+      },
+      selector: selector,
+      text: text,
+      attributes: attributes,
+      url: window.location.href,
+      path: window.location.pathname,
+      timestamp: Date.now()
+    };
+    try {
+      window.parent.postMessage({
+        type: "iframe-element-hover",
+        data: elementInfo,
+        source: "iframe-highlight-injector"
+      }, "*");
+    } catch (error) {
+      console.warn("无法发送消息到父窗口:", error);
+    }
+  }
+
+  // 鼠标离开事件处理
+  function handleMouseOut(e) {
+    if (!highlightEnabled) return;
+    var relatedTarget = e.relatedTarget;
+
+    // 如果鼠标移动到高亮相关元素上，不隐藏高亮
+    if (relatedTarget && (relatedTarget === highlightBox || relatedTarget === tagLabel || relatedTarget === overlay || relatedTarget === selectedBox || relatedTarget === selectedLabel)) {
+      return;
+    }
+    highlightBox.style.display = "none";
+    tagLabel.style.display = "none";
+    try {
+      window.parent.postMessage({
+        type: "iframe-element-hover",
+        data: null,
+        source: "iframe-highlight-injector"
+      }, "*");
+    } catch (error) {
+      console.warn("无法发送消息到父窗口:", error);
+    }
+  }
+
+  // 点击事件处理
+  function handleClick(e) {
+    var target = e.target;
+    if (!target || target === overlay || target === highlightBox || target === tagLabel || target === selectedBox || target === selectedLabel) {
+      return;
+    }
+
+    // 避免处理 html 和 body 元素
+    if (target === document.documentElement || target === document.body) {
+      return;
+    }
+
+    // 检查是否是交互元素，这些元素需要保留默认行为
+    var isInteractiveElement = ['input', 'textarea', 'select', 'button', 'a'].includes(target.tagName.toLowerCase());
+
+    // 如果高亮功能启用，对于非交互元素阻止默认行为和事件传播
+    if (highlightEnabled) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    var rect = target.getBoundingClientRect();
+    var selector = getElementSelector(target);
+    var text = getElementText(target);
+    var attributes = getElementAttributes(target);
+    console.log("Element clicked:", {
+      tagName: target.tagName,
+      selector: selector,
+      rect: rect
+    });
+
+    // 立即更新选中高亮
+    updateSelectedHighlight(target);
+
+    // 隐藏悬停高亮，因为现在是选中状态
+    highlightBox.style.display = "none";
+    tagLabel.style.display = "none";
+    var elementInfo = {
+      tagName: target.tagName.toLowerCase(),
+      rect: {
+        left: rect.left,
+        top: rect.top,
+        right: rect.right,
+        bottom: rect.bottom,
+        width: rect.width,
+        height: rect.height,
+        x: rect.x,
+        y: rect.y
+      },
+      selector: selector,
+      text: text,
+      attributes: attributes,
+      url: window.location.href,
+      path: window.location.pathname,
+      timestamp: Date.now()
+    };
+    try {
+      window.parent.postMessage({
+        type: "iframe-element-click",
+        data: elementInfo,
+        source: "iframe-highlight-injector"
+      }, "*");
+    } catch (error) {
+      console.warn("无法发送消息到父窗口:", error);
+    }
+  }
+
+  // 监听来自父窗口的消息
+  function handleParentMessage(event) {
+    console.log("Received message from parent:", event.data);
+    if (event.data.type === "iframe-highlight-toggle") {
+      var enabled = event.data.enabled;
+      console.log("Highlight toggle:", enabled);
+      if (enabled) {
+        enableHighlight();
+      } else {
+        disableHighlight();
+      }
+    } else if (event.data.type === "enable-iframe-highlight") {
+      console.log("Enable iframe highlight");
+      enableHighlight();
+    } else if (event.data.type === "disable-iframe-highlight") {
+      console.log("Disable iframe highlight");
+      disableHighlight();
+    } else if (event.data.type === "toggle-iframe-highlight") {
+      var _enabled = event.data.enabled !== undefined ? event.data.enabled : !highlightEnabled;
+      console.log("Toggle iframe highlight to:", _enabled);
+      if (_enabled) {
+        enableHighlight();
+      } else {
+        disableHighlight();
+      }
+    } else if (event.data.type === "update-selected-element") {
+      var selector = event.data.selector;
+      console.log("Update selected element with selector:", selector);
+      if (selector) {
+        try {
+          var element = document.querySelector(selector);
+          console.log("Found element by selector:", element);
+          updateSelectedHighlight(element);
+        } catch (error) {
+          console.warn("Failed to select element:", error);
+          updateSelectedHighlight(null);
+        }
+      } else {
+        updateSelectedHighlight(null);
+      }
+    } else if (event.data.type === "clear-selected-element") {
+      console.log("Clear selected element");
+      updateSelectedHighlight(null);
+    }
+  }
+
+  // 启用高亮功能
+  function enableHighlight() {
+    console.log("Enabling highlight");
+    document.addEventListener("mouseover", handleMouseOver, true);
+    document.addEventListener("mouseout", handleMouseOut, true);
+    document.addEventListener("click", handleClick, true);
+    highlightEnabled = true;
+    overlay.style.display = "block";
+  }
+
+  // 禁用高亮功能
+  function disableHighlight() {
+    console.log("Disabling highlight");
+    highlightEnabled = false;
+    // 保持事件监听器，但通过 highlightEnabled 变量控制行为
+    // 这样可以保留选中状态的显示
+    highlightBox.style.display = "none";
+    tagLabel.style.display = "none";
+    // 不隐藏 selectedBox 和 selectedLabel，保留选中状态
+  }
+
+  // 完全禁用高亮功能（移除所有监听器）
+  function fullyDisableHighlight() {
+    console.log("Fully disabling highlight");
+    highlightEnabled = false;
+    document.removeEventListener("mouseover", handleMouseOver, true);
+    document.removeEventListener("mouseout", handleMouseOut, true);
+    document.removeEventListener("click", handleClick, true);
+    overlay.style.display = "none";
+    highlightBox.style.display = "none";
+    tagLabel.style.display = "none";
+    selectedBox.style.display = "none";
+    selectedLabel.style.display = "none";
+  }
+
+  // 添加事件监听
+  enableHighlight();
+  window.addEventListener("message", handleParentMessage);
+
+  // 暴露全局函数供外部调用
+  window.__iframeHighlightControl = {
+    enable: enableHighlight,
+    disable: disableHighlight,
+    fullyDisable: fullyDisableHighlight,
+    isEnabled: function isEnabled() {
+      return highlightEnabled;
+    },
+    getSelectedElement: function getSelectedElement() {
+      return selectedElement;
+    },
+    updateSelected: updateSelectedHighlight,
+    // 通过消息发送开关控制
+    sendToggleMessage: function sendToggleMessage(enabled) {
+      window.parent.postMessage({
+        type: 'iframe-highlight-status',
+        enabled: enabled || highlightEnabled,
+        source: 'iframe-highlight-injector'
+      }, '*');
+    }
+  };
+
+  // 通知父窗口脚本已加载
+  try {
+    window.parent.postMessage({
+      type: "iframe-highlight-ready",
+      data: {
+        url: window.location.href,
+        userAgent: navigator.userAgent,
+        timestamp: Date.now()
+      },
+      source: "iframe-highlight-injector"
+    }, "*");
+  } catch (error) {
+    console.warn("无法发送就绪消息到父窗口:", error);
+  }
+
+  // 清理函数
+  window.__iframeHighlightCleanup = function () {
+    fullyDisableHighlight();
+    window.removeEventListener("message", handleParentMessage);
+    if (overlay.parentElement) {
+      overlay.parentElement.removeChild(overlay);
+    }
+    delete window.__iframeHighlightInitialized;
+    delete window.__iframeHighlightCleanup;
+  };
+})();
+
+</script>
+
+<script>
+/**
+ * Iframe 元素高亮注入脚本
+ * 需要在目标网站中引入此脚本来支持跨域 iframe 高亮功能
+ *
+ * 使用方法：
+ * 1. 将此脚本添加到目标网站的 HTML 中
+ * 2. 或通过浏览器扩展、用户脚本等方式注入
+ */
+
+(function () {
+  "use strict";
+
+  // 检查是否在 iframe 中
+  if (window.self === window.top) {
+    return; // 不在 iframe 中，不执行
+  }
+
+  // 检查是否已经初始化过
+  if (window.__iframeHighlightInitialized) {
+    return;
+  }
+  window.__iframeHighlightInitialized = true;
+  console.log("Iframe 高亮脚本已加载");
+
+  // 创建高亮覆盖层
+  var overlay = document.createElement("div");
+  overlay.id = "iframe-highlight-overlay";
+  overlay.style.cssText = "\n    position: fixed;\n    top: 0;\n    left: 0;\n    width: 100vw;\n    height: 100vh;\n    pointer-events: none;\n    z-index: 999999;\n    overflow: hidden;\n  ";
+
+  // 创建悬停高亮框（虚线边框）
+  var highlightBox = document.createElement("div");
+  highlightBox.id = "iframe-highlight-box";
+  highlightBox.style.cssText = "\n    position: absolute;\n    border: 2px dashed #007AFF;\n    background: rgba(0, 122, 255, 0.08);\n    pointer-events: none;\n    display: none;\n    transition: all 0.1s ease;\n    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.8);\n    border-radius: 2px;\n  ";
+
+  // 创建选中节点的常驻高亮框（实线边框）
+  var selectedBox = document.createElement("div");
+  selectedBox.id = "iframe-selected-box";
+  selectedBox.style.cssText = "\n    position: absolute;\n    border: 2px solid #007AFF;\n    pointer-events: none;\n    display: none;\n    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.9), 0 0 8px rgba(255, 107, 53, 0.4);\n    border-radius: 2px;\n    z-index: 1000000;\n  ";
+
+  // 创建悬停标签显示
+  var tagLabel = document.createElement("div");
+  tagLabel.id = "iframe-tag-label";
+  tagLabel.style.cssText = "\n    position: absolute;\n    background: #007AFF;\n    color: white;\n    padding: 2px 6px;\n    font-size: 11px;\n    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;\n    border-radius: 2px;\n    pointer-events: none;\n    display: none;\n    white-space: nowrap;\n    z-index: 1000001;\n    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);\n    font-weight: 500;\n  ";
+
+  // 创建选中节点标签
+  var selectedLabel = document.createElement("div");
+  selectedLabel.id = "iframe-selected-label";
+  selectedLabel.style.cssText = "\n    position: absolute;\n    background: #007AFF;\n    color: white;\n    padding: 3px 8px;\n    font-size: 11px;\n    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;\n    border-radius: 3px;\n    pointer-events: none;\n    display: none;\n    white-space: nowrap;\n    z-index: 1000002;\n    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);\n    font-weight: 600;\n  ";
+  overlay.appendChild(highlightBox);
+  overlay.appendChild(selectedBox);
+  overlay.appendChild(tagLabel);
+  overlay.appendChild(selectedLabel);
+  document.body.appendChild(overlay);
+
+  // 存储当前选中的元素
+  var selectedElement = null;
+  var highlightEnabled = false;
+
+  // 更新选中元素的高亮显示
+  function updateSelectedHighlight(element) {
+    console.log("updateSelectedHighlight called with:", element);
+    if (!element) {
+      selectedBox.style.display = "none";
+      selectedLabel.style.display = "none";
+      selectedElement = null;
+      console.log("Cleared selected highlight");
+      return;
+    }
+    selectedElement = element;
+    var rect = element.getBoundingClientRect();
+    console.log("Selected element rect:", rect);
+
+    // 更新选中高亮框位置
+    selectedBox.style.display = "block";
+    selectedBox.style.left = "".concat(rect.left - 2, "px");
+    selectedBox.style.top = "".concat(rect.top - 2, "px");
+    selectedBox.style.width = "".concat(rect.width + 4, "px");
+    selectedBox.style.height = "".concat(rect.height + 4, "px");
+
+    // 更新选中标签位置和内容
+    selectedLabel.style.display = "block";
+    selectedLabel.textContent = "\u2713 <".concat(element.tagName.toLowerCase(), ">");
+
+    // 计算标签位置，确保不超出视窗
+    var labelTop = rect.top - 28;
+    var labelLeft = rect.left;
+
+    // 如果标签会超出顶部，显示在元素下方
+    if (labelTop < 5) {
+      labelTop = rect.bottom + 5;
+    }
+
+    // 如果标签会超出右侧，向左调整
+    var labelWidth = selectedLabel.offsetWidth || 100; // 预估宽度
+    if (labelLeft + labelWidth > window.innerWidth - 10) {
+      labelLeft = window.innerWidth - labelWidth - 10;
+    }
+    selectedLabel.style.left = "".concat(Math.max(5, labelLeft), "px");
+    selectedLabel.style.top = "".concat(labelTop, "px");
+    console.log("Selected highlight positioned at:", {
+      left: selectedBox.style.left,
+      top: selectedBox.style.top,
+      width: selectedBox.style.width,
+      height: selectedBox.style.height
+    });
+  }
+  function getElementSelector(element) {
+    if (!(element instanceof Element)) throw new Error('Argument must be a DOM element');
+    var segments = [];
+    var current = element;
+    while (current !== document.documentElement) {
+      var selector = '';
+      // 优先检查唯一ID
+      if (current.id && document.querySelectorAll("#".concat(current.id)).length === 1) {
+        segments.unshift("#".concat(current.id));
+        break; // ID唯一，无需继续向上
+      }
+
+      // 生成类名选择器（取第一个有效类名）
+      var classes = Array.from(current.classList).filter(function (c) {
+        return !c.startsWith('js-');
+      });
+      var className = classes.length > 0 ? ".".concat(classes[0]) : '';
+
+      // 生成位置索引（nth-child）
+      var tag = current.tagName.toLowerCase();
+      if (!className) {
+        var siblings = Array.from(current.parentNode.children);
+        var index = siblings.findIndex(function (el) {
+          return el === current;
+        }) + 1;
+        selector = "".concat(tag, ":nth-child(").concat(index, ")");
+      } else {
+        selector = className;
+      }
+      segments.unshift(selector);
+      current = current.parentElement;
+    }
+
+    // 处理根元素
+    if (current === document.documentElement) {
+      segments.unshift('html');
+    }
+    return segments.join(' > ');
+  }
+
+  // 获取元素文本内容
+  function getElementText(element) {
+    var _element$textContent;
+    if (element.tagName === "INPUT") {
+      return element.value || element.placeholder || "";
+    }
+    if (element.tagName === "TEXTAREA") {
+      return element.value || element.placeholder || "";
+    }
+    var text = ((_element$textContent = element.textContent) === null || _element$textContent === void 0 ? void 0 : _element$textContent.trim()) || "";
+    return text.length > 50 ? text.substring(0, 50) + "..." : text;
+  }
+
+  // 获取元素属性信息
+  function getElementAttributes(element) {
+    var attrs = {};
+    for (var i = 0; i < element.attributes.length; i++) {
+      var attr = element.attributes[i];
+      attrs[attr.name] = attr.value;
+    }
+    return attrs;
+  }
+
+  // 鼠标悬停事件处理
+  function handleMouseOver(e) {
+    if (!highlightEnabled) return;
+    var target = e.target;
+    if (!target || target === overlay || target === highlightBox || target === tagLabel || target === selectedBox || target === selectedLabel) {
+      return;
+    }
+
+    // 避免高亮 html 和 body 元素
+    if (target === document.documentElement || target === document.body) {
+      return;
+    }
+
+    // 如果是已选中的元素，不显示悬停高亮
+    if (target === selectedElement) {
+      highlightBox.style.display = "none";
+      tagLabel.style.display = "none";
+      return;
+    }
+    var rect = target.getBoundingClientRect();
+    var selector = getElementSelector(target);
+    var text = getElementText(target);
+    var attributes = getElementAttributes(target);
+
+    // 更新悬停高亮框位置
+    highlightBox.style.display = "block";
+    highlightBox.style.left = "".concat(rect.left - 2, "px");
+    highlightBox.style.top = "".concat(rect.top - 2, "px");
+    highlightBox.style.width = "".concat(rect.width + 4, "px");
+    highlightBox.style.height = "".concat(rect.height + 4, "px");
+
+    // 更新标签位置和内容
+    tagLabel.style.display = "block";
+    tagLabel.textContent = "<".concat(target.tagName.toLowerCase(), ">");
+
+    // 计算标签位置，确保不超出视窗
+    var labelTop = rect.top - 22;
+    var labelLeft = rect.left;
+
+    // 如果标签会超出顶部，显示在元素下方
+    if (labelTop < 0) {
+      labelTop = rect.bottom + 5;
+    }
+
+    // 如果标签会超出右侧，向左调整
+    if (labelLeft + tagLabel.offsetWidth > window.innerWidth) {
+      labelLeft = window.innerWidth - tagLabel.offsetWidth - 5;
+    }
+    tagLabel.style.left = "".concat(Math.max(0, labelLeft), "px");
+    tagLabel.style.top = "".concat(labelTop, "px");
+
+    // 发送消息到父窗口
+    var elementInfo = {
+      tagName: target.tagName.toLowerCase(),
+      rect: {
+        left: rect.left,
+        top: rect.top,
+        right: rect.right,
+        bottom: rect.bottom,
+        width: rect.width,
+        height: rect.height,
+        x: rect.x,
+        y: rect.y
+      },
+      selector: selector,
+      text: text,
+      attributes: attributes,
+      url: window.location.href,
+      path: window.location.pathname,
+      timestamp: Date.now()
+    };
+    try {
+      window.parent.postMessage({
+        type: "iframe-element-hover",
+        data: elementInfo,
+        source: "iframe-highlight-injector"
+      }, "*");
+    } catch (error) {
+      console.warn("无法发送消息到父窗口:", error);
+    }
+  }
+
+  // 鼠标离开事件处理
+  function handleMouseOut(e) {
+    if (!highlightEnabled) return;
+    var relatedTarget = e.relatedTarget;
+
+    // 如果鼠标移动到高亮相关元素上，不隐藏高亮
+    if (relatedTarget && (relatedTarget === highlightBox || relatedTarget === tagLabel || relatedTarget === overlay || relatedTarget === selectedBox || relatedTarget === selectedLabel)) {
+      return;
+    }
+    highlightBox.style.display = "none";
+    tagLabel.style.display = "none";
+    try {
+      window.parent.postMessage({
+        type: "iframe-element-hover",
+        data: null,
+        source: "iframe-highlight-injector"
+      }, "*");
+    } catch (error) {
+      console.warn("无法发送消息到父窗口:", error);
+    }
+  }
+
+  // 点击事件处理
+  function handleClick(e) {
+    var target = e.target;
+    if (!target || target === overlay || target === highlightBox || target === tagLabel || target === selectedBox || target === selectedLabel) {
+      return;
+    }
+
+    // 避免处理 html 和 body 元素
+    if (target === document.documentElement || target === document.body) {
+      return;
+    }
+
+    // 检查是否是交互元素，这些元素需要保留默认行为
+    var isInteractiveElement = ['input', 'textarea', 'select', 'button', 'a'].includes(target.tagName.toLowerCase());
+
+    // 如果高亮功能启用，对于非交互元素阻止默认行为和事件传播
+    if (highlightEnabled) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    var rect = target.getBoundingClientRect();
+    var selector = getElementSelector(target);
+    var text = getElementText(target);
+    var attributes = getElementAttributes(target);
+    console.log("Element clicked:", {
+      tagName: target.tagName,
+      selector: selector,
+      rect: rect
+    });
+
+    // 立即更新选中高亮
+    updateSelectedHighlight(target);
+
+    // 隐藏悬停高亮，因为现在是选中状态
+    highlightBox.style.display = "none";
+    tagLabel.style.display = "none";
+    var elementInfo = {
+      tagName: target.tagName.toLowerCase(),
+      rect: {
+        left: rect.left,
+        top: rect.top,
+        right: rect.right,
+        bottom: rect.bottom,
+        width: rect.width,
+        height: rect.height,
+        x: rect.x,
+        y: rect.y
+      },
+      selector: selector,
+      text: text,
+      attributes: attributes,
+      url: window.location.href,
+      path: window.location.pathname,
+      timestamp: Date.now()
+    };
+    try {
+      window.parent.postMessage({
+        type: "iframe-element-click",
+        data: elementInfo,
+        source: "iframe-highlight-injector"
+      }, "*");
+    } catch (error) {
+      console.warn("无法发送消息到父窗口:", error);
+    }
+  }
+
+  // 监听来自父窗口的消息
+  function handleParentMessage(event) {
+    console.log("Received message from parent:", event.data);
+    if (event.data.type === "iframe-highlight-toggle") {
+      var enabled = event.data.enabled;
+      console.log("Highlight toggle:", enabled);
+      if (enabled) {
+        enableHighlight();
+      } else {
+        disableHighlight();
+      }
+    } else if (event.data.type === "enable-iframe-highlight") {
+      console.log("Enable iframe highlight");
+      enableHighlight();
+    } else if (event.data.type === "disable-iframe-highlight") {
+      console.log("Disable iframe highlight");
+      disableHighlight();
+    } else if (event.data.type === "toggle-iframe-highlight") {
+      var _enabled = event.data.enabled !== undefined ? event.data.enabled : !highlightEnabled;
+      console.log("Toggle iframe highlight to:", _enabled);
+      if (_enabled) {
+        enableHighlight();
+      } else {
+        disableHighlight();
+      }
+    } else if (event.data.type === "update-selected-element") {
+      var selector = event.data.selector;
+      console.log("Update selected element with selector:", selector);
+      if (selector) {
+        try {
+          var element = document.querySelector(selector);
+          console.log("Found element by selector:", element);
+          updateSelectedHighlight(element);
+        } catch (error) {
+          console.warn("Failed to select element:", error);
+          updateSelectedHighlight(null);
+        }
+      } else {
+        updateSelectedHighlight(null);
+      }
+    } else if (event.data.type === "clear-selected-element") {
+      console.log("Clear selected element");
+      updateSelectedHighlight(null);
+    }
+  }
+
+  // 启用高亮功能
+  function enableHighlight() {
+    console.log("Enabling highlight");
+    document.addEventListener("mouseover", handleMouseOver, true);
+    document.addEventListener("mouseout", handleMouseOut, true);
+    document.addEventListener("click", handleClick, true);
+    highlightEnabled = true;
+    overlay.style.display = "block";
+  }
+
+  // 禁用高亮功能
+  function disableHighlight() {
+    console.log("Disabling highlight");
+    highlightEnabled = false;
+    // 保持事件监听器，但通过 highlightEnabled 变量控制行为
+    // 这样可以保留选中状态的显示
+    highlightBox.style.display = "none";
+    tagLabel.style.display = "none";
+    // 不隐藏 selectedBox 和 selectedLabel，保留选中状态
+  }
+
+  // 完全禁用高亮功能（移除所有监听器）
+  function fullyDisableHighlight() {
+    console.log("Fully disabling highlight");
+    highlightEnabled = false;
+    document.removeEventListener("mouseover", handleMouseOver, true);
+    document.removeEventListener("mouseout", handleMouseOut, true);
+    document.removeEventListener("click", handleClick, true);
+    overlay.style.display = "none";
+    highlightBox.style.display = "none";
+    tagLabel.style.display = "none";
+    selectedBox.style.display = "none";
+    selectedLabel.style.display = "none";
+  }
+
+  // 添加事件监听
+  enableHighlight();
+  window.addEventListener("message", handleParentMessage);
+
+  // 暴露全局函数供外部调用
+  window.__iframeHighlightControl = {
+    enable: enableHighlight,
+    disable: disableHighlight,
+    fullyDisable: fullyDisableHighlight,
+    isEnabled: function isEnabled() {
+      return highlightEnabled;
+    },
+    getSelectedElement: function getSelectedElement() {
+      return selectedElement;
+    },
+    updateSelected: updateSelectedHighlight,
+    // 通过消息发送开关控制
+    sendToggleMessage: function sendToggleMessage(enabled) {
+      window.parent.postMessage({
+        type: 'iframe-highlight-status',
+        enabled: enabled || highlightEnabled,
+        source: 'iframe-highlight-injector'
+      }, '*');
+    }
+  };
+
+  // 通知父窗口脚本已加载
+  try {
+    window.parent.postMessage({
+      type: "iframe-highlight-ready",
+      data: {
+        url: window.location.href,
+        userAgent: navigator.userAgent,
+        timestamp: Date.now()
+      },
+      source: "iframe-highlight-injector"
+    }, "*");
+  } catch (error) {
+    console.warn("无法发送就绪消息到父窗口:", error);
+  }
+
+  // 清理函数
+  window.__iframeHighlightCleanup = function () {
+    fullyDisableHighlight();
+    window.removeEventListener("message", handleParentMessage);
+    if (overlay.parentElement) {
+      overlay.parentElement.removeChild(overlay);
+    }
+    delete window.__iframeHighlightInitialized;
+    delete window.__iframeHighlightCleanup;
+  };
+})();
+
+</script>
+
+<script>
+/**
+ * Iframe 元素高亮注入脚本
+ * 需要在目标网站中引入此脚本来支持跨域 iframe 高亮功能
+ *
+ * 使用方法：
+ * 1. 将此脚本添加到目标网站的 HTML 中
+ * 2. 或通过浏览器扩展、用户脚本等方式注入
+ */
+
+(function () {
+  "use strict";
+
+  // 检查是否在 iframe 中
+  if (window.self === window.top) {
+    return; // 不在 iframe 中，不执行
+  }
+
+  // 检查是否已经初始化过
+  if (window.__iframeHighlightInitialized) {
+    return;
+  }
+  window.__iframeHighlightInitialized = true;
+  console.log("Iframe 高亮脚本已加载");
+
+  // 创建高亮覆盖层
+  var overlay = document.createElement("div");
+  overlay.id = "iframe-highlight-overlay";
+  overlay.style.cssText = "\n    position: fixed;\n    top: 0;\n    left: 0;\n    width: 100vw;\n    height: 100vh;\n    pointer-events: none;\n    z-index: 999999;\n    overflow: hidden;\n  ";
+
+  // 创建悬停高亮框（虚线边框）
+  var highlightBox = document.createElement("div");
+  highlightBox.id = "iframe-highlight-box";
+  highlightBox.style.cssText = "\n    position: absolute;\n    border: 2px dashed #007AFF;\n    background: rgba(0, 122, 255, 0.08);\n    pointer-events: none;\n    display: none;\n    transition: all 0.1s ease;\n    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.8);\n    border-radius: 2px;\n  ";
+
+  // 创建选中节点的常驻高亮框（实线边框）
+  var selectedBox = document.createElement("div");
+  selectedBox.id = "iframe-selected-box";
+  selectedBox.style.cssText = "\n    position: absolute;\n    border: 2px solid #007AFF;\n    pointer-events: none;\n    display: none;\n    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.9), 0 0 8px rgba(255, 107, 53, 0.4);\n    border-radius: 2px;\n    z-index: 1000000;\n  ";
+
+  // 创建悬停标签显示
+  var tagLabel = document.createElement("div");
+  tagLabel.id = "iframe-tag-label";
+  tagLabel.style.cssText = "\n    position: absolute;\n    background: #007AFF;\n    color: white;\n    padding: 2px 6px;\n    font-size: 11px;\n    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;\n    border-radius: 2px;\n    pointer-events: none;\n    display: none;\n    white-space: nowrap;\n    z-index: 1000001;\n    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);\n    font-weight: 500;\n  ";
+
+  // 创建选中节点标签
+  var selectedLabel = document.createElement("div");
+  selectedLabel.id = "iframe-selected-label";
+  selectedLabel.style.cssText = "\n    position: absolute;\n    background: #007AFF;\n    color: white;\n    padding: 3px 8px;\n    font-size: 11px;\n    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;\n    border-radius: 3px;\n    pointer-events: none;\n    display: none;\n    white-space: nowrap;\n    z-index: 1000002;\n    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);\n    font-weight: 600;\n  ";
+  overlay.appendChild(highlightBox);
+  overlay.appendChild(selectedBox);
+  overlay.appendChild(tagLabel);
+  overlay.appendChild(selectedLabel);
+  document.body.appendChild(overlay);
+
+  // 存储当前选中的元素
+  var selectedElement = null;
+  var highlightEnabled = false;
+
+  // 更新选中元素的高亮显示
+  function updateSelectedHighlight(element) {
+    console.log("updateSelectedHighlight called with:", element);
+    if (!element) {
+      selectedBox.style.display = "none";
+      selectedLabel.style.display = "none";
+      selectedElement = null;
+      console.log("Cleared selected highlight");
+      return;
+    }
+    selectedElement = element;
+    var rect = element.getBoundingClientRect();
+    console.log("Selected element rect:", rect);
+
+    // 更新选中高亮框位置
+    selectedBox.style.display = "block";
+    selectedBox.style.left = "".concat(rect.left - 2, "px");
+    selectedBox.style.top = "".concat(rect.top - 2, "px");
+    selectedBox.style.width = "".concat(rect.width + 4, "px");
+    selectedBox.style.height = "".concat(rect.height + 4, "px");
+
+    // 更新选中标签位置和内容
+    selectedLabel.style.display = "block";
+    selectedLabel.textContent = "\u2713 <".concat(element.tagName.toLowerCase(), ">");
+
+    // 计算标签位置，确保不超出视窗
+    var labelTop = rect.top - 28;
+    var labelLeft = rect.left;
+
+    // 如果标签会超出顶部，显示在元素下方
+    if (labelTop < 5) {
+      labelTop = rect.bottom + 5;
+    }
+
+    // 如果标签会超出右侧，向左调整
+    var labelWidth = selectedLabel.offsetWidth || 100; // 预估宽度
+    if (labelLeft + labelWidth > window.innerWidth - 10) {
+      labelLeft = window.innerWidth - labelWidth - 10;
+    }
+    selectedLabel.style.left = "".concat(Math.max(5, labelLeft), "px");
+    selectedLabel.style.top = "".concat(labelTop, "px");
+    console.log("Selected highlight positioned at:", {
+      left: selectedBox.style.left,
+      top: selectedBox.style.top,
+      width: selectedBox.style.width,
+      height: selectedBox.style.height
+    });
+  }
+  function getElementSelector(element) {
+    if (!(element instanceof Element)) throw new Error('Argument must be a DOM element');
+    var segments = [];
+    var current = element;
+    while (current !== document.documentElement) {
+      var selector = '';
+      // 优先检查唯一ID
+      if (current.id && document.querySelectorAll("#".concat(current.id)).length === 1) {
+        segments.unshift("#".concat(current.id));
+        break; // ID唯一，无需继续向上
+      }
+
+      // 生成类名选择器（取第一个有效类名）
+      var classes = Array.from(current.classList).filter(function (c) {
+        return !c.startsWith('js-');
+      });
+      var className = classes.length > 0 ? ".".concat(classes[0]) : '';
+
+      // 生成位置索引（nth-child）
+      var tag = current.tagName.toLowerCase();
+      if (!className) {
+        var siblings = Array.from(current.parentNode.children);
+        var index = siblings.findIndex(function (el) {
+          return el === current;
+        }) + 1;
+        selector = "".concat(tag, ":nth-child(").concat(index, ")");
+      } else {
+        selector = className;
+      }
+      segments.unshift(selector);
+      current = current.parentElement;
+    }
+
+    // 处理根元素
+    if (current === document.documentElement) {
+      segments.unshift('html');
+    }
+    return segments.join(' > ');
+  }
+
+  // 获取元素文本内容
+  function getElementText(element) {
+    var _element$textContent;
+    if (element.tagName === "INPUT") {
+      return element.value || element.placeholder || "";
+    }
+    if (element.tagName === "TEXTAREA") {
+      return element.value || element.placeholder || "";
+    }
+    var text = ((_element$textContent = element.textContent) === null || _element$textContent === void 0 ? void 0 : _element$textContent.trim()) || "";
+    return text.length > 50 ? text.substring(0, 50) + "..." : text;
+  }
+
+  // 获取元素属性信息
+  function getElementAttributes(element) {
+    var attrs = {};
+    for (var i = 0; i < element.attributes.length; i++) {
+      var attr = element.attributes[i];
+      attrs[attr.name] = attr.value;
+    }
+    return attrs;
+  }
+
+  // 鼠标悬停事件处理
+  function handleMouseOver(e) {
+    if (!highlightEnabled) return;
+    var target = e.target;
+    if (!target || target === overlay || target === highlightBox || target === tagLabel || target === selectedBox || target === selectedLabel) {
+      return;
+    }
+
+    // 避免高亮 html 和 body 元素
+    if (target === document.documentElement || target === document.body) {
+      return;
+    }
+
+    // 如果是已选中的元素，不显示悬停高亮
+    if (target === selectedElement) {
+      highlightBox.style.display = "none";
+      tagLabel.style.display = "none";
+      return;
+    }
+    var rect = target.getBoundingClientRect();
+    var selector = getElementSelector(target);
+    var text = getElementText(target);
+    var attributes = getElementAttributes(target);
+
+    // 更新悬停高亮框位置
+    highlightBox.style.display = "block";
+    highlightBox.style.left = "".concat(rect.left - 2, "px");
+    highlightBox.style.top = "".concat(rect.top - 2, "px");
+    highlightBox.style.width = "".concat(rect.width + 4, "px");
+    highlightBox.style.height = "".concat(rect.height + 4, "px");
+
+    // 更新标签位置和内容
+    tagLabel.style.display = "block";
+    tagLabel.textContent = "<".concat(target.tagName.toLowerCase(), ">");
+
+    // 计算标签位置，确保不超出视窗
+    var labelTop = rect.top - 22;
+    var labelLeft = rect.left;
+
+    // 如果标签会超出顶部，显示在元素下方
+    if (labelTop < 0) {
+      labelTop = rect.bottom + 5;
+    }
+
+    // 如果标签会超出右侧，向左调整
+    if (labelLeft + tagLabel.offsetWidth > window.innerWidth) {
+      labelLeft = window.innerWidth - tagLabel.offsetWidth - 5;
+    }
+    tagLabel.style.left = "".concat(Math.max(0, labelLeft), "px");
+    tagLabel.style.top = "".concat(labelTop, "px");
+
+    // 发送消息到父窗口
+    var elementInfo = {
+      tagName: target.tagName.toLowerCase(),
+      rect: {
+        left: rect.left,
+        top: rect.top,
+        right: rect.right,
+        bottom: rect.bottom,
+        width: rect.width,
+        height: rect.height,
+        x: rect.x,
+        y: rect.y
+      },
+      selector: selector,
+      text: text,
+      attributes: attributes,
+      url: window.location.href,
+      path: window.location.pathname,
+      timestamp: Date.now()
+    };
+    try {
+      window.parent.postMessage({
+        type: "iframe-element-hover",
+        data: elementInfo,
+        source: "iframe-highlight-injector"
+      }, "*");
+    } catch (error) {
+      console.warn("无法发送消息到父窗口:", error);
+    }
+  }
+
+  // 鼠标离开事件处理
+  function handleMouseOut(e) {
+    if (!highlightEnabled) return;
+    var relatedTarget = e.relatedTarget;
+
+    // 如果鼠标移动到高亮相关元素上，不隐藏高亮
+    if (relatedTarget && (relatedTarget === highlightBox || relatedTarget === tagLabel || relatedTarget === overlay || relatedTarget === selectedBox || relatedTarget === selectedLabel)) {
+      return;
+    }
+    highlightBox.style.display = "none";
+    tagLabel.style.display = "none";
+    try {
+      window.parent.postMessage({
+        type: "iframe-element-hover",
+        data: null,
+        source: "iframe-highlight-injector"
+      }, "*");
+    } catch (error) {
+      console.warn("无法发送消息到父窗口:", error);
+    }
+  }
+
+  // 点击事件处理
+  function handleClick(e) {
+    var target = e.target;
+    if (!target || target === overlay || target === highlightBox || target === tagLabel || target === selectedBox || target === selectedLabel) {
+      return;
+    }
+
+    // 避免处理 html 和 body 元素
+    if (target === document.documentElement || target === document.body) {
+      return;
+    }
+
+    // 检查是否是交互元素，这些元素需要保留默认行为
+    var isInteractiveElement = ['input', 'textarea', 'select', 'button', 'a'].includes(target.tagName.toLowerCase());
+
+    // 如果高亮功能启用，对于非交互元素阻止默认行为和事件传播
+    if (highlightEnabled) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    var rect = target.getBoundingClientRect();
+    var selector = getElementSelector(target);
+    var text = getElementText(target);
+    var attributes = getElementAttributes(target);
+    console.log("Element clicked:", {
+      tagName: target.tagName,
+      selector: selector,
+      rect: rect
+    });
+
+    // 立即更新选中高亮
+    updateSelectedHighlight(target);
+
+    // 隐藏悬停高亮，因为现在是选中状态
+    highlightBox.style.display = "none";
+    tagLabel.style.display = "none";
+    var elementInfo = {
+      tagName: target.tagName.toLowerCase(),
+      rect: {
+        left: rect.left,
+        top: rect.top,
+        right: rect.right,
+        bottom: rect.bottom,
+        width: rect.width,
+        height: rect.height,
+        x: rect.x,
+        y: rect.y
+      },
+      selector: selector,
+      text: text,
+      attributes: attributes,
+      url: window.location.href,
+      path: window.location.pathname,
+      timestamp: Date.now()
+    };
+    try {
+      window.parent.postMessage({
+        type: "iframe-element-click",
+        data: elementInfo,
+        source: "iframe-highlight-injector"
+      }, "*");
+    } catch (error) {
+      console.warn("无法发送消息到父窗口:", error);
+    }
+  }
+
+  // 监听来自父窗口的消息
+  function handleParentMessage(event) {
+    console.log("Received message from parent:", event.data);
+    if (event.data.type === "iframe-highlight-toggle") {
+      var enabled = event.data.enabled;
+      console.log("Highlight toggle:", enabled);
+      if (enabled) {
+        enableHighlight();
+      } else {
+        disableHighlight();
+      }
+    } else if (event.data.type === "enable-iframe-highlight") {
+      console.log("Enable iframe highlight");
+      enableHighlight();
+    } else if (event.data.type === "disable-iframe-highlight") {
+      console.log("Disable iframe highlight");
+      disableHighlight();
+    } else if (event.data.type === "toggle-iframe-highlight") {
+      var _enabled = event.data.enabled !== undefined ? event.data.enabled : !highlightEnabled;
+      console.log("Toggle iframe highlight to:", _enabled);
+      if (_enabled) {
+        enableHighlight();
+      } else {
+        disableHighlight();
+      }
+    } else if (event.data.type === "update-selected-element") {
+      var selector = event.data.selector;
+      console.log("Update selected element with selector:", selector);
+      if (selector) {
+        try {
+          var element = document.querySelector(selector);
+          console.log("Found element by selector:", element);
+          updateSelectedHighlight(element);
+        } catch (error) {
+          console.warn("Failed to select element:", error);
+          updateSelectedHighlight(null);
+        }
+      } else {
+        updateSelectedHighlight(null);
+      }
+    } else if (event.data.type === "clear-selected-element") {
+      console.log("Clear selected element");
+      updateSelectedHighlight(null);
+    }
+  }
+
+  // 启用高亮功能
+  function enableHighlight() {
+    console.log("Enabling highlight");
+    document.addEventListener("mouseover", handleMouseOver, true);
+    document.addEventListener("mouseout", handleMouseOut, true);
+    document.addEventListener("click", handleClick, true);
+    highlightEnabled = true;
+    overlay.style.display = "block";
+  }
+
+  // 禁用高亮功能
+  function disableHighlight() {
+    console.log("Disabling highlight");
+    highlightEnabled = false;
+    // 保持事件监听器，但通过 highlightEnabled 变量控制行为
+    // 这样可以保留选中状态的显示
+    highlightBox.style.display = "none";
+    tagLabel.style.display = "none";
+    // 不隐藏 selectedBox 和 selectedLabel，保留选中状态
+  }
+
+  // 完全禁用高亮功能（移除所有监听器）
+  function fullyDisableHighlight() {
+    console.log("Fully disabling highlight");
+    highlightEnabled = false;
+    document.removeEventListener("mouseover", handleMouseOver, true);
+    document.removeEventListener("mouseout", handleMouseOut, true);
+    document.removeEventListener("click", handleClick, true);
+    overlay.style.display = "none";
+    highlightBox.style.display = "none";
+    tagLabel.style.display = "none";
+    selectedBox.style.display = "none";
+    selectedLabel.style.display = "none";
+  }
+
+  // 添加事件监听
+  enableHighlight();
+  window.addEventListener("message", handleParentMessage);
+
+  // 暴露全局函数供外部调用
+  window.__iframeHighlightControl = {
+    enable: enableHighlight,
+    disable: disableHighlight,
+    fullyDisable: fullyDisableHighlight,
+    isEnabled: function isEnabled() {
+      return highlightEnabled;
+    },
+    getSelectedElement: function getSelectedElement() {
+      return selectedElement;
+    },
+    updateSelected: updateSelectedHighlight,
+    // 通过消息发送开关控制
+    sendToggleMessage: function sendToggleMessage(enabled) {
+      window.parent.postMessage({
+        type: 'iframe-highlight-status',
+        enabled: enabled || highlightEnabled,
+        source: 'iframe-highlight-injector'
+      }, '*');
+    }
+  };
+
+  // 通知父窗口脚本已加载
+  try {
+    window.parent.postMessage({
+      type: "iframe-highlight-ready",
+      data: {
+        url: window.location.href,
+        userAgent: navigator.userAgent,
+        timestamp: Date.now()
+      },
+      source: "iframe-highlight-injector"
+    }, "*");
+  } catch (error) {
+    console.warn("无法发送就绪消息到父窗口:", error);
+  }
+
+  // 清理函数
+  window.__iframeHighlightCleanup = function () {
+    fullyDisableHighlight();
+    window.removeEventListener("message", handleParentMessage);
+    if (overlay.parentElement) {
+      overlay.parentElement.removeChild(overlay);
+    }
+    delete window.__iframeHighlightInitialized;
+    delete window.__iframeHighlightCleanup;
+  };
+})();
+
+</script>
+</body>
+</html>

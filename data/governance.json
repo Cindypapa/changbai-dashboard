@@ -1,0 +1,64 @@
+{
+  "business_9x": [
+    { "icon": "🏛️", "name": "综治组织", "count": "12个组织" },
+    { "icon": "👥", "name": "实有人口", "count": "8,542人" },
+    { "icon": "🏠", "name": "房屋管理", "count": "1,256套" },
+    { "icon": "⚠️", "name": "矛盾纠纷", "count": "23件待调" },
+    { "icon": "👮", "name": "特殊人群", "count": "48人" },
+    { "icon": "🏢", "name": "重点场所", "count": "86处" },
+    { "icon": "🚗", "name": "车辆管理", "count": "2,156辆" },
+    { "icon": "📱", "name": "综治事件", "count": "128件" },
+    { "icon": "📊", "name": "数据研判", "count": "分析中" }
+  ],
+  "key_people": [
+    { "name": "刑满释放人员", "type": "重点关注", "count": "12人", "color": "var(--accent-orange)" },
+    { "name": "社区矫正对象", "type": "日常管控", "count": "8人", "color": "var(--accent-cyan)" },
+    { "name": "精神障碍患者", "type": "健康跟踪", "count": "15人", "color": "var(--accent-green)" },
+    { "name": "独居老人", "type": "关怀走访", "count": "23人", "color": "var(--accent-cyan)" }
+  ],
+  "workflow": [
+    { "icon": "📝", "name": "事件上报", "count": "128件" },
+    { "icon": "📋", "name": "任务派发", "count": "125件" },
+    { "icon": "👤", "name": "网格员处理", "count": "120件" },
+    { "icon": "🔍", "name": "结果核查", "count": "118件" },
+    { "icon": "✅", "name": "办结归档", "count": "115件" }
+  ],
+  "grid_distribution": [
+    { "name": "第一网格", "value": 92 },
+    { "name": "第二网格", "value": 85 },
+    { "name": "第三网格", "value": 78 },
+    { "name": "第四网格", "value": 65 },
+    { "name": "第五网格", "value": 58 }
+  ],
+  "governance_resources": [
+    { "title": "网格员", "stats": [
+      { "label": "在岗", "value": "42人", "color": "var(--accent-green)" },
+      { "label": "巡查中", "value": "28人", "color": "var(--accent-cyan)" }
+    ]},
+    { "title": "志愿者", "stats": [
+      { "label": "登记人数", "value": "156人", "color": "" },
+      { "label": "活跃度", "value": "78%", "color": "var(--accent-green)" }
+    ]},
+    { "title": "保安力量", "stats": [
+      { "label": "配置人数", "value": "86人", "color": "" },
+      { "label": "在线率", "value": "95%", "color": "var(--accent-green)" }
+    ]},
+    { "title": "民警力量", "stats": [
+      { "label": "驻社区", "value": "12人", "color": "" },
+      { "label": "今日出警", "value": "5次", "color": "" }
+    ]}
+  ],
+  "dispute_table": [
+    { "type": "邻里纠纷", "count": "45件", "status": "处理中", "status_color": "var(--accent-orange)" },
+    { "type": "物业纠纷", "count": "32件", "status": "已化解", "status_color": "var(--accent-green)" },
+    { "type": "劳资纠纷", "count": "18件", "status": "处理中", "status_color": "var(--accent-orange)" },
+    { "type": "其他纠纷", "count": "28件", "status": "待处理", "status_color": "var(--accent-cyan)" }
+  ],
+  "dispute_chart": {
+    "labels": ["邻里纠纷", "物业纠纷", "劳资纠纷", "婚姻家庭", "其他"],
+    "datasets": [
+      { "label": "本月新增", "data": [15, 12, 8, 6, 10], "color": "#00d4ff" },
+      { "label": "已化解", "data": [12, 10, 6, 5, 8], "color": "#00ff88" }
+    ]
+  }
+}

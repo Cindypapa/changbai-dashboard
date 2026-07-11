@@ -1,0 +1,68 @@
+{
+  "scores": [
+    { "label": "综合评分", "value": 85, "color": "var(--accent-cyan)" },
+    { "label": "安全感", "value": 92, "color": "var(--accent-green)" },
+    { "label": "满意度", "value": 75, "color": "var(--accent-orange)" }
+  ],
+  "trend_chart": {
+    "labels": ["1月", "2月", "3月"],
+    "datasets": [
+      { "label": "事件数", "data": [356, 298, 245], "color": "#00d4ff" },
+      { "label": "已处理", "data": [340, 285, 238], "color": "#00ff88" }
+    ]
+  },
+  "population": [
+    { "title": "户籍人口", "stats": [
+      { "label": "总数", "value": "6,285人" },
+      { "label": "占比", "value": "73.6%" }
+    ]},
+    { "title": "流动人口", "stats": [
+      { "label": "总数", "value": "2,257人" },
+      { "label": "占比", "value": "26.4%" }
+    ]}
+  ],
+  "pie_charts": [
+    {
+      "title": "事件类型分布",
+      "labels": ["治安事件", "纠纷调解", "安全隐患", "其他"],
+      "data": [35, 28, 22, 15],
+      "colors": ["#00d4ff", "#00ff88", "#ff9900", "#b0b8c4"]
+    },
+    {
+      "title": "处理时效分布",
+      "labels": ["及时处理", "超时处理", "待处理"],
+      "data": [75, 18, 7],
+      "colors": ["#00ff88", "#ff9900", "#ff4444"]
+    },
+    {
+      "title": "区域事件分布",
+      "labels": ["住宅区", "商业区", "工业区", "公共区域"],
+      "data": [42, 25, 18, 15],
+      "colors": ["#00d4ff", "#4d94ff", "#0066cc", "#003366"]
+    }
+  ],
+  "radar_chart": {
+    "labels": ["治安", "服务", "环境", "民生", "应急", "党建"],
+    "datasets": [
+      { "label": "街道评分", "data": [88, 85, 82, 90, 86, 92], "color": "#00d4ff" },
+      { "label": "全区平均", "data": [82, 80, 78, 85, 82, 88], "color": "#00ff88" }
+    ]
+  },
+  "community_rankings": [
+    { "name": "长白一社区", "score": 95, "color": "linear-gradient(90deg, #00ff88, #00d4ff)" },
+    { "name": "长白二社区", "score": 92, "color": "" },
+    { "name": "长白三社区", "score": 88, "color": "" },
+    { "name": "长白四社区", "score": 85, "color": "" },
+    { "name": "长白五社区", "score": 82, "color": "" }
+  ],
+  "runtime_metrics": [
+    { "icon": "⚡", "value": "99.8%", "label": "系统可用率" },
+    { "icon": "📊", "value": "<100ms", "label": "响应时间" },
+    { "icon": "🔄", "value": "15:00", "label": "数据更新" },
+    { "icon": "👥", "value": "23", "label": "在线用户" }
+  ],
+  "risk_warnings": [
+    { "icon": "⚠️", "title": "下周高温预警", "desc": "用电负荷可能上升" },
+    { "icon": "📅", "title": "矛盾纠纷高发期", "desc": "节假日前后需关注" }
+  ]
+}

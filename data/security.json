@@ -1,0 +1,35 @@
+{
+  "device_stats": {
+    "total": 386,
+    "online": 372,
+    "alert": 8,
+    "online_rate": 96.4
+  },
+  "xueliang_status": [
+    { "label": "公安联网", "status": "online", "text": "● 已接入" },
+    { "label": "城管联网", "status": "online", "text": "● 已接入" },
+    { "label": "住建联网", "status": "online", "text": "● 已接入" },
+    { "label": "应急联网", "status": "connecting", "text": "● 接入中" }
+  ],
+  "alert_chart": {
+    "labels": ["周一", "周二", "周三", "周四", "周五", "周六", "周日"],
+    "data": [12, 19, 8, 15, 22, 18, 10]
+  },
+  "cameras": [
+    { "id": "CAM-001", "name": "长白一路口", "img": "https://cdn.hailuoai.com/matrix_agent/20260318/image_tool/output/120858_34c9/workspace/chaobai-prototype/imgs/camera_01_new.jpg", "status": "online", "media_type": "image" },
+    { "id": "CAM-002", "name": "长白二路街面", "img": "https://cdn.hailuoai.com/matrix_agent/20260318/image_tool/output/120812_1042/workspace/chaobai-prototype/imgs/camera_02_new.jpg", "status": "online", "media_type": "image" },
+    { "id": "CAM-003", "name": "商业街", "img": "https://cdn.hailuoai.com/matrix_agent/20260318/image_tool/output/120828_8719/workspace/chaobai-prototype/imgs/camera_04_new.jpg", "status": "online", "media_type": "image" },
+    { "id": "CAM-005", "name": "学校周边", "img": "https://cdn.hailuoai.com/matrix_agent/20260318/image_tool/output/120844_9e01/workspace/chaobai-prototype/imgs/camera_05_new.jpg", "status": "online", "media_type": "image" },
+    { "id": "CAM-007", "name": "背街小巷", "img": "https://cdn.hailuoai.com/matrix_agent/20260318/image_tool/output/121114_79c8/workspace/chaobai-prototype/imgs/camera_07_new.jpg", "status": "online", "media_type": "image" },
+    { "id": "CAM-008", "name": "社区广场", "img": "https://cdn.hailuoai.com/matrix_agent/20260318/image_tool/output/120911_b7c9/workspace/chaobai-prototype/imgs/camera_06_new.jpg", "status": "online", "media_type": "image" }
+  ],
+  "face_chart": {
+    "labels": ["已比对", "陌生人", "重点人员"],
+    "data": [4800, 520, 112]
+  },
+  "recent_captures": [
+    { "type": "重点人员识别", "location": "长白一路口", "time": "14:28:32" },
+    { "type": "陌生人识别", "location": "社区入口", "time": "14:25:15" },
+    { "type": "人脸比对成功", "location": "商业街", "time": "14:22:48" }
+  ]
+}
