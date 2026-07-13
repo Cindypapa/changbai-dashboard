@@ -1553,7 +1553,14 @@
                                         sel.onchange = () => { item[subK] = sel.value; };
                                         fRow.append(sel);
                                     } else if (subK === 'type') {
-                                        const sel = mkSelect([['alert','告警'],['warning','预警'],['normal','正常'],['command','指挥中心'],['resource','资源'],['info','信息'],['event','事件']], subVal);
+                                        // 根据父级内容区分类型下拉
+                                        let typeOptions;
+                                        if (k === 'key_people') {
+                                            typeOptions = [['社区矫正人员','社区矫正人员'],['精神障碍患者','精神障碍患者'],['刑满释放人员','刑满释放人员'],['吸毒人员','吸毒人员'],['重点信访人员','重点信访人员'],['其他高危人员','其他高危人员']];
+                                        } else {
+                                            typeOptions = [['alert','告警'],['warning','预警'],['normal','正常'],['command','指挥中心'],['resource','资源'],['info','信息'],['event','事件']];
+                                        }
+                                        const sel = mkSelect(typeOptions, subVal);
                                         sel.onchange = () => { item[subK] = sel.value; };
                                         fRow.append(sel);
                                     } else if (subK === 'trend_type') {
