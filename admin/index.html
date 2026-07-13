@@ -856,6 +856,7 @@
                             '<div style="display:flex;gap:4px;flex-shrink:0;">' +
                             '<button class="btn btn-sm media-preview-btn" data-idx="' + i + '" data-url="/changbai' + f.url + '" style="font-size:11px;padding:2px 8px;">▶ 预览</button>' +
                             '<button class="btn btn-sm btn-primary media-select-btn" data-idx="' + i + '" data-url="/changbai' + f.url + '" style="font-size:11px;padding:2px 8px;">✓ 选择</button>' +
+                            '<button class="btn btn-sm media-delete-btn" data-idx="' + i + '" data-url="/changbai' + f.url + '" data-name="' + f.name.replace(/"/g,'&quot;') + '" style="font-size:11px;padding:2px 8px;background:rgba(255,80,80,0.15);color:#ff5050;border-color:rgba(255,80,80,0.3);">🗑 删除</button>' +
                             '</div></div>' +
                             '<div class="media-video-preview" id="mediaVidPrev_' + i + '" style="display:none;width:100%;max-height:200px;margin-top:4px;">' +
                             '<video src="/changbai' + f.url + '" controls preload="none" ' +
@@ -917,6 +918,59 @@
                         });
                         ovl.querySelectorAll('.media-preview-btn').forEach(b => { b.textContent = '▶ 预览'; });
                     }
+
+                    // 删除按钮事件
+                    overlay.querySelectorAll('.media-delete-btn').forEach(btn => {
+                        btn.onclick = async (e) => {
+                            e.stopPropagation();
+                            const name = btn.dataset.name;
+                            const url = btn.dataset.url;
+                            const filename = url.split('/').pop();
+                            // 确认弹窗
+                            const confirmOverlay = document.createElement('div');
+                            confirmOverlay.className = 'modal-overlay';
+                            confirmOverlay.style.zIndex = '10001';
+                            confirmOverlay.innerHTML = '<div class="modal-box" style="width:380px;text-align:center;">' +
+                                '<h3 style="color:#ff5050;margin-bottom:12px;">⚠️ 确认删除</h3>' +
+                                '<p style="color:#ccc;font-size:13px;margin-bottom:6px;">确定要删除以下视频吗？</p>' +
+                                '<p style="color:#e0e0e0;font-size:12px;word-break:break-all;margin-bottom:16px;background:rgba(0,0,0,0.3);padding:8px;border-radius:4px;">' + name + '</p>' +
+                                '<p style="color:#888;font-size:11px;margin-bottom:16px;">此操作不可撤销</p>' +
+                                '<div style="display:flex;gap:10px;justify-content:center;">' +
+                                '<button class="btn" id="delCancel">取消</button>' +
+                                '<button class="btn" id="delConfirm" style="background:rgba(255,80,80,0.2);color:#ff5050;border-color:rgba(255,80,80,0.4);">确认删除</button>' +
+                                '</div></div>';
+                            document.body.append(confirmOverlay);
+                            confirmOverlay.addEventListener('click', e2 => { if (e2.target === confirmOverlay) confirmOverlay.remove(); });
+                            confirmOverlay.querySelector('#delCancel').onclick = () => confirmOverlay.remove();
+                            confirmOverlay.querySelector('#delConfirm').onclick = async () => {
+                                confirmOverlay.querySelector('#delConfirm').textContent = '⏳ 删除中...';
+                                confirmOverlay.querySelector('#delConfirm').disabled = true;
+                                try {
+                                    const resp = await authFetch('/changbai/api/admin/media/' + filename, { method: 'DELETE' });
+                                    if (resp.ok) {
+                                        showToast('✅ 已删除: ' + name);
+                                        confirmOverlay.remove();
+                                        // 从弹窗中移除该条目
+                                        const itemEl = overlay.querySelector('.media-video-item[data-idx="' + btn.dataset.idx + '"]');
+                                        if (itemEl) {
+                                            itemEl.style.transition = 'opacity 0.3s';
+                                            itemEl.style.opacity = '0';
+                                            setTimeout(() => itemEl.remove(), 300);
+                                        }
+                                        // 如果选中的是这个视频，清除选择
+                                        const selVal = document.getElementById('selectedMedia_val');
+                                        if (selVal && selVal.value === btoa(url)) {
+                                            selVal.value = '';
+                                        }
+                                    } else {
+                                        showToast('❌ 删除失败', true);
+                                    }
+                                } catch(err) {
+                                    showToast('❌ 删除失败: ' + err.message, true);
+                                }
+                            };
+                        };
+                    });
 
                     // 点击条目行选择
                     overlay.querySelectorAll('.media-video-item').forEach(item => {
