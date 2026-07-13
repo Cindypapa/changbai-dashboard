@@ -844,13 +844,23 @@
                     const overlay = document.createElement('div');
                     overlay.className = 'modal-overlay';
                     const vidFiles = json.files.filter(f => /\.(mp4|webm|avi|mov|mkv)$/i.test(f.name));
-                    overlay.innerHTML = '<div class="modal-box" style="width:500px;max-height:70vh;overflow-y:auto;"><h3>从媒体库选取视频</h3>' +
+                    overlay.innerHTML = '<div class="modal-box" style="width:560px;max-height:70vh;overflow-y:auto;"><h3>从媒体库选取视频</h3>' +
                         '<div style="display:flex;flex-direction:column;gap:8px;">' +
-                        vidFiles.map(f => '<div style="cursor:pointer;border:2px solid transparent;border-radius:6px;padding:6px;display:flex;align-items:center;gap:8px;transition:border 0.2s;background:rgba(0,212,255,0.05);" ' +
-                            'onclick="document.getElementById(\'selectedMedia_val\').value=\'' + btoa('/changbai' + f.url) + '\';document.querySelectorAll(\'.media-select-item\').forEach(e=>e.style.borderColor=\'transparent\');this.style.borderColor=\'#00d4ff\';" class="media-select-item">' +
-                            '<span style="font-size:24px;">🎬</span>' +
-                            '<div><div style="font-size:13px;color:#e0e0e0;">' + f.name + '</div>' +
-                            '<div style="font-size:10px;color:#666;">' + new Date(f.time).toLocaleString() + '</div></div></div>').join('') +
+                        vidFiles.map((f, i) => '<div class="media-select-item media-video-item" style="border:2px solid transparent;border-radius:6px;padding:8px;background:rgba(0,212,255,0.05);transition:border 0.2s;" data-url="/changbai' + f.url + '" data-idx="' + i + '">' +
+                            '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">' +
+                            '<div style="display:flex;align-items:center;gap:6px;min-width:0;">' +
+                            '<span style="font-size:20px;flex-shrink:0;">🎬</span>' +
+                            '<div style="min-width:0;"><div style="font-size:13px;color:#e0e0e0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + f.name + '</div>' +
+                            '<div style="font-size:10px;color:#666;">' + new Date(f.time).toLocaleString() + '</div></div>' +
+                            '</div>' +
+                            '<div style="display:flex;gap:4px;flex-shrink:0;">' +
+                            '<button class="btn btn-sm media-preview-btn" data-idx="' + i + '" data-url="/changbai' + f.url + '" style="font-size:11px;padding:2px 8px;">▶ 预览</button>' +
+                            '<button class="btn btn-sm btn-primary media-select-btn" data-idx="' + i + '" data-url="/changbai' + f.url + '" style="font-size:11px;padding:2px 8px;">✓ 选择</button>' +
+                            '</div></div>' +
+                            '<div class="media-video-preview" id="mediaVidPrev_' + i + '" style="display:none;width:100%;max-height:200px;margin-top:4px;">' +
+                            '<video src="/changbai' + f.url + '" controls preload="none" ' +
+                            'style="width:100%;max-height:200px;background:#000;border-radius:4px;"></video></div>' +
+                            '</div>').join('') +
                         '</div>' +
                         '<input type="hidden" id="selectedMedia_val">' +
                         '<div class="modal-actions" style="margin-top:14px;">' +
@@ -858,6 +868,69 @@
                         '<button class="btn btn-primary" id="btnPickMedia">✅ 选取</button></div></div>';
                     document.body.append(overlay);
                     overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+
+                    // 选择按钮事件
+                    overlay.querySelectorAll('.media-select-btn').forEach(btn => {
+                        btn.onclick = (e) => {
+                            e.stopPropagation();
+                            const url = btn.dataset.url;
+                            const idx = btn.dataset.idx;
+                            document.getElementById('selectedMedia_val').value = btoa(url);
+                            // 高亮选中
+                            overlay.querySelectorAll('.media-video-item').forEach(el => el.style.borderColor = 'transparent');
+                            overlay.querySelector('.media-video-item[data-idx="' + idx + '"]').style.borderColor = '#00d4ff';
+                            // 关闭所有视频预览
+                            stopAllMediaPreviews(overlay);
+                        };
+                    });
+
+                    // 预览按钮事件
+                    overlay.querySelectorAll('.media-preview-btn').forEach(btn => {
+                        btn.onclick = (e) => {
+                            e.stopPropagation();
+                            const idx = btn.dataset.idx;
+                            const prevDiv = document.getElementById('mediaVidPrev_' + idx);
+                            const video = prevDiv.querySelector('video');
+                            const isVisible = prevDiv.style.display !== 'none';
+                            // 先停止所有预览
+                            stopAllMediaPreviews(overlay);
+                            if (!isVisible) {
+                                prevDiv.style.display = '';
+                                btn.textContent = '⏸ 收起';
+                                // 加载视频源（preload="none" 延迟加载）
+                                if (!video.src || video.src !== btn.dataset.url) {
+                                    video.src = btn.dataset.url;
+                                }
+                                video.load();
+                                video.play().catch(() => {}); // 自动播放可能被拦截，静默处理
+                            } else {
+                                btn.textContent = '▶ 预览';
+                            }
+                        };
+                    });
+
+                    function stopAllMediaPreviews(ovl) {
+                        ovl.querySelectorAll('.media-video-preview').forEach(div => {
+                            const v = div.querySelector('video');
+                            if (v) { v.pause(); v.src = ''; }
+                            div.style.display = 'none';
+                        });
+                        ovl.querySelectorAll('.media-preview-btn').forEach(b => { b.textContent = '▶ 预览'; });
+                    }
+
+                    // 点击条目行选择
+                    overlay.querySelectorAll('.media-video-item').forEach(item => {
+                        item.addEventListener('click', function(e) {
+                            if (e.target.closest('button')) return; // 不拦截按钮点击
+                            const url = this.dataset.url;
+                            const idx = this.dataset.idx;
+                            document.getElementById('selectedMedia_val').value = btoa(url);
+                            overlay.querySelectorAll('.media-video-item').forEach(el => el.style.borderColor = 'transparent');
+                            this.style.borderColor = '#00d4ff';
+                            stopAllMediaPreviews(overlay);
+                        });
+                    });
+
                     overlay.querySelector('#btnPickMedia').onclick = () => {
                         const sel = document.getElementById('selectedMedia_val').value;
                         if (!sel) { showToast('请先选择视频', true); return; }
