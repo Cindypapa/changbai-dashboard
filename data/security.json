@@ -23,8 +23,8 @@
     },
     {
       "label": "应急联网",
-      "status": "connecting",
-      "text": "● 接入中"
+      "status": "alert",
+      "text": "● 已接入"
     }
   ],
   "alert_chart": {
@@ -50,31 +50,31 @@
   "cameras": [
     {
       "id": "CAM-001",
-      "name": "长白一路口",
-      "img": "/changbai/uploads/cam_001_changbai_yilukou.jpg",
+      "name": "靖宇东路安图路",
+      "img": "/changbai/uploads/cam_video_01_busy_street.mp4",
       "status": "online",
-      "media_type": "image"
+      "media_type": "video"
     },
     {
       "id": "CAM-002",
       "name": "长白二路街面",
-      "img": "/changbai/uploads/cam_002_changbai_erlu.jpg",
+      "img": "/changbai/uploads/cam_video_02_dusk_street.mp4",
       "status": "online",
-      "media_type": "image"
+      "media_type": "video"
     },
     {
       "id": "CAM-003",
-      "name": "商业街",
-      "img": "/changbai/uploads/cam_003_shangyejie.jpg",
+      "name": "商业街夜市",
+      "img": "/changbai/uploads/cam_video_03_night_trolley.mp4",
       "status": "online",
-      "media_type": "image"
+      "media_type": "video"
     },
     {
       "id": "CAM-005",
-      "name": "学校周边",
-      "img": "/changbai/uploads/cam_005_xuexiaozhoubian.jpg",
+      "name": "学校周边道路",
+      "img": "/changbai/uploads/cam_video_04_rainy_times_square.mp4",
       "status": "online",
-      "media_type": "image"
+      "media_type": "video"
     },
     {
       "id": "CAM-007",
