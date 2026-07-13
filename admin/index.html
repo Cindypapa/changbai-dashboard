@@ -247,6 +247,11 @@
         .btn-icon.danger:hover { border-color: #ff4444; color: #ff4444; }
         .kv-row .mini-input { width: 60px; flex: none; padding: 6px 8px; background: rgba(0,40,80,0.5); border: 1px solid rgba(0,212,255,0.3); border-radius: 4px; color: #fff; font-size: 12px; text-align: center; }
         .kv-row .mini-input:focus { border-color: #00d4ff; outline: none; box-shadow: 0 0 6px rgba(0,212,255,0.3); }
+        /* 图片上传控件 */
+        .img-upload-wrap { display: flex; gap: 8px; align-items: flex-start; flex: 1; max-width: 500px; }
+        .img-upload-preview { width: 80px; height: 60px; border-radius: 4px; border: 1px solid rgba(0,212,255,0.2); object-fit: cover; background: rgba(0,0,0,0.3); flex-shrink: 0; }
+        .img-upload-input-group { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+        .img-upload-input-group input { width: 100%; }
 
         /* 登录页 */
         #loginOverlay input:focus { outline: none; border-color: #00d4ff !important; box-shadow: 0 0 8px rgba(0,212,255,0.3); }
@@ -765,7 +770,7 @@
                                         sel.onchange = () => { item[subK] = sel.value === 'true'; };
                                         fRow.append(sel);
                                     } else if (subK === 'media_type') {
-                                        const sel = mkSelect([['image','图片'],['video','视频'],['rtsp','RTSP流']], subVal);
+                                        const sel = mkSelect([['image','图片'],['video','视频'],['mp4','MP4视频'],['rtsp','RTSP流']], subVal);
                                         sel.onchange = () => { item[subK] = sel.value; };
                                         fRow.append(sel);
                                     } else if (subK === 'status') {
@@ -784,6 +789,113 @@
                                         const sel = mkSelect([['true','是'],['false','否']], subVal);
                                         sel.onchange = () => { item[subK] = sel.value === 'true'; };
                                         fRow.append(sel);
+                                    } else if (subK === 'img' && k === 'cameras') {
+                                        // 监控画面：图片上传 + URL 双模式
+                                        const imgWrap = document.createElement('div');
+                                        imgWrap.className = 'img-upload-wrap';
+                                        const preview = document.createElement('img');
+                                        preview.className = 'img-upload-preview';
+                                        preview.src = subVal || '';
+                                        preview.onerror = () => { preview.src = ''; preview.style.display = 'none'; };
+                                        if (!subVal) preview.style.display = 'none';
+                                        imgWrap.append(preview);
+                                        const inputGroup = document.createElement('div');
+                                        inputGroup.className = 'img-upload-input-group';
+                                        const inp = mkInput('text', subVal);
+                                        inp.placeholder = '图片路径（可手动输入或上传后自动填入）';
+                                        inp.onchange = () => {
+                                            item[subK] = inp.value;
+                                            if (inp.value) {
+                                                preview.src = inp.value;
+                                                preview.style.display = '';
+                                            } else {
+                                                preview.style.display = 'none';
+                                            }
+                                        };
+                                        inputGroup.append(inp);
+                                        const btnRow = document.createElement('div');
+                                        btnRow.style.cssText = 'display:flex;gap:6px;';
+                                        const uploadBtn = document.createElement('button');
+                                        uploadBtn.className = 'btn btn-sm';
+                                        uploadBtn.textContent = '📷 上传图片';
+                                        uploadBtn.style.cssText = 'font-size:11px;padding:4px 10px;';
+                                        const fileInp = document.createElement('input');
+                                        fileInp.type = 'file';
+                                        fileInp.accept = 'image/*,video/*';
+                                        fileInp.style.display = 'none';
+                                        uploadBtn.onclick = () => fileInp.click();
+                                        fileInp.onchange = async () => {
+                                            const file = fileInp.files[0];
+                                            if (!file) return;
+                                            uploadBtn.textContent = '⏳ 上传中...';
+                                            uploadBtn.disabled = true;
+                                            try {
+                                                const fd = new FormData();
+                                                fd.append('file', file);
+                                                const resp = await authFetch('/changbai/api/admin/upload-media', { method: 'POST', body: fd });
+                                                if (resp.status === 401) { showLogin(); return; }
+                                                const json = await resp.json();
+                                                if (json.success) {
+                                                    const localPath = '/changbai' + json.url;
+                                                    item[subK] = localPath;
+                                                    inp.value = localPath;
+                                                    preview.src = localPath;
+                                                    preview.style.display = '';
+                                                    showToast('✅ 上传成功，路径已自动填入');
+                                                } else {
+                                                    showToast('❌ 上传失败: ' + json.error, true);
+                                                }
+                                            } catch(err) {
+                                                showToast('❌ 上传失败: ' + err.message, true);
+                                            }
+                                            uploadBtn.textContent = '📷 上传图片';
+                                            uploadBtn.disabled = false;
+                                            fileInp.value = '';
+                                        };
+                                        const browseBtn = document.createElement('button');
+                                        browseBtn.className = 'btn btn-sm';
+                                        browseBtn.textContent = '📁 媒体库选取';
+                                        browseBtn.style.cssText = 'font-size:11px;padding:4px 10px;';
+                                        browseBtn.onclick = async () => {
+                                            try {
+                                                const resp = await authFetch('/changbai/api/admin/media-list');
+                                                if (resp.status === 401) { showLogin(); return; }
+                                                const json = await resp.json();
+                                                if (!json.success || json.files.length === 0) { showToast('媒体库为空', true); return; }
+                                                // 弹出选取框
+                                                const overlay = document.createElement('div');
+                                                overlay.className = 'modal-overlay';
+                                                const imgFiles = json.files.filter(f => /\.(jpg|jpeg|png|gif|webp)$/i.test(f.name));
+                                                overlay.innerHTML = '<div class="modal-box" style="width:500px;max-height:70vh;overflow-y:auto;"><h3>从媒体库选取图片</h3>' +
+                                                    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">' +
+                                                    imgFiles.map(f => '<div style="cursor:pointer;border:2px solid transparent;border-radius:6px;overflow:hidden;transition:border 0.2s;" ' +
+                                                        'onclick="document.getElementById(\'selectedImg\').value=\'' + btoa('/changbai' + f.url) + '\';document.querySelectorAll(\'.media-select-item\').forEach(e=>e.style.borderColor=\'transparent\');this.style.borderColor=\'#00d4ff\';" class="media-select-item">' +
+                                                        '<img src="/changbai' + f.url + '" style="width:100%;height:80px;object-fit:cover;">' +
+                                                        '<div style="font-size:10px;padding:4px;color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + f.name + '</div></div>').join('') +
+                                                    '</div>' +
+                                                    '<input type="hidden" id="selectedImg">' +
+                                                    '<div class="modal-actions" style="margin-top:14px;">' +
+                                                    '<button class="btn" onclick="this.closest(\'.modal-overlay\').remove()">取消</button>' +
+                                                    '<button class="btn btn-primary" id="btnPickImg">✅ 选取</button></div></div>';
+                                                document.body.append(overlay);
+                                                overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+                                                overlay.querySelector('#btnPickImg').onclick = () => {
+                                                    const sel = document.getElementById('selectedImg').value;
+                                                    if (!sel) { showToast('请先选择图片', true); return; }
+                                                    const path = atob(sel);
+                                                    item[subK] = path;
+                                                    inp.value = path;
+                                                    preview.src = path;
+                                                    preview.style.display = '';
+                                                    overlay.remove();
+                                                };
+                                            } catch(err) { showToast('❌ 加载失败', true); }
+                                        };
+                                        btnRow.append(uploadBtn, browseBtn, fileInp);
+                                        inputGroup.append(btnRow);
+                                        imgWrap.append(inputGroup);
+                                        fRow.style.cssText = 'display:flex;gap:8px;margin-bottom:8px;align-items:flex-start;';
+                                        fRow.append(imgWrap);
                                     } else {
                                         const inp = mkInput('text', subVal);
                                         inp.onchange = () => { item[subK] = inp.value; };
