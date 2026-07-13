@@ -305,8 +305,7 @@
             <div>
                 <span id="currentUserName" style="color:#00d4ff;margin-right:12px;font-size:13px;"></span>
                 <button class="btn btn-danger btn-sm" id="btnLogout" style="display:none;">🚪 退出</button>
-                <button class="btn" id="btnReset">🔄 重置为默认</button>
-                <button class="btn btn-primary" id="btnSave">💾 保存配置</button>
+
             </div>
         </div>
         <div class="content" id="contentArea"></div>
@@ -447,27 +446,6 @@
                 document.getElementById('pageTitle').textContent = pageTitles[currentPage] || '';
                 await loadPage(currentPage);
             });
-        });
-
-        // ─── 保存 ───
-        document.getElementById('btnSave').addEventListener('click', async () => {
-            if (currentPage === 'media' || currentPage === 'users') return;
-            try {
-                const resp = await authFetch('/changbai/api/admin/save', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ page: currentPage, data: currentData })
-                });
-                if (resp.status === 401) { showLogin(); return; }
-                const json = await resp.json();
-                showToast(json.success ? '✅ ' + json.message : '❌ 保存失败: ' + json.error, !json.success);
-            } catch(err) { showToast('❌ 保存失败: ' + err.message, true); }
-        });
-
-        // ─── 重置 ───
-        document.getElementById('btnReset').addEventListener('click', () => {
-            if (currentPage === 'media' || currentPage === 'users') return;
-            if (confirm('确定要重置「' + (pageTitles[currentPage] || '当前页面') + '」的数据吗？此操作不可撤销。')) loadPage(currentPage);
         });
 
         async function loadPage(page) {
@@ -1452,8 +1430,6 @@
                 document.getElementById('contentArea').innerHTML = '<div style="text-align:center;color:#666;padding:60px;">⛔ 需要管理员权限</div>';
                 return;
             }
-            document.getElementById('btnSave').style.display = 'none';
-            document.getElementById('btnReset').style.display = 'none';
             const container = document.getElementById('contentArea');
             container.innerHTML = '<div class="section-card"><h3>用户列表</h3>' +
                 '<div style="margin-bottom:12px;"><button class="btn btn-primary btn-sm" id="btnAddUser">+ 新增用户</button></div>' +
@@ -1554,23 +1530,10 @@
         // ─── 初始化 ───
         (async function init() {
             if (await checkAuth()) {
-                document.getElementById('btnSave').style.display = '';
-                document.getElementById('btnReset').style.display = '';
                 currentPage = 'overview';
                 loadPage('overview');
-            } else {
-                document.getElementById('btnSave').style.display = 'none';
-                document.getElementById('btnReset').style.display = 'none';
             }
         })();
-
-        // Ctrl+S 快捷保存
-        document.addEventListener('keydown', e => {
-            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-                e.preventDefault();
-                document.getElementById('btnSave').click();
-            }
-        });
     </script>
 </body>
 </html>
