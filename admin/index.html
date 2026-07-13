@@ -648,6 +648,279 @@
             return wrap;
         }
 
+        // ─── 监控相机媒体编辑器 ───
+
+        // 图片类型：上传 + URL + 预览
+        function renderImageEditor(fRow, key, value, item) {
+            fRow.style.cssText = 'display:flex;gap:8px;margin-bottom:8px;align-items:flex-start;';
+            const imgWrap = document.createElement('div');
+            imgWrap.className = 'img-upload-wrap';
+            const preview = document.createElement('img');
+            preview.className = 'img-upload-preview';
+            preview.src = value || '';
+            preview.onerror = () => { preview.src = ''; preview.style.display = 'none'; };
+            if (!value) preview.style.display = 'none';
+            imgWrap.append(preview);
+            const inputGroup = document.createElement('div');
+            inputGroup.className = 'img-upload-input-group';
+            const inp = mkInput('text', value);
+            inp.placeholder = '图片路径（可手动输入或上传后自动填入）';
+            inp.onchange = () => {
+                item[key] = inp.value;
+                if (inp.value) { preview.src = inp.value; preview.style.display = ''; }
+                else { preview.style.display = 'none'; }
+            };
+            inputGroup.append(inp);
+            // 上传 + 媒体库按钮
+            const btnRow = document.createElement('div');
+            btnRow.style.cssText = 'display:flex;gap:6px;';
+
+            const uploadBtn = document.createElement('button');
+            uploadBtn.className = 'btn btn-sm';
+            uploadBtn.textContent = '📷 上传图片';
+            uploadBtn.style.cssText = 'font-size:11px;padding:4px 10px;';
+            const fileInp = document.createElement('input');
+            fileInp.type = 'file';
+            fileInp.accept = 'image/*';
+            fileInp.style.display = 'none';
+            uploadBtn.onclick = () => fileInp.click();
+            fileInp.onchange = async () => {
+                const file = fileInp.files[0];
+                if (!file) return;
+                uploadBtn.textContent = '⏳ 上传中...';
+                uploadBtn.disabled = true;
+                try {
+                    const fd = new FormData();
+                    fd.append('file', file);
+                    const resp = await authFetch('/changbai/api/admin/upload-media', { method: 'POST', body: fd });
+                    if (resp.status === 401) { showLogin(); return; }
+                    const json = await resp.json();
+                    if (json.success) {
+                        const localPath = '/changbai' + json.url;
+                        item[key] = localPath;
+                        inp.value = localPath;
+                        preview.src = localPath;
+                        preview.style.display = '';
+                        showToast('✅ 上传成功');
+                    } else {
+                        showToast('❌ 上传失败: ' + json.error, true);
+                    }
+                } catch(err) {
+                    showToast('❌ 上传失败: ' + err.message, true);
+                }
+                uploadBtn.textContent = '📷 上传图片';
+                uploadBtn.disabled = false;
+                fileInp.value = '';
+            };
+
+            const browseBtn = document.createElement('button');
+            browseBtn.className = 'btn btn-sm';
+            browseBtn.textContent = '📁 从媒体库选图';
+            browseBtn.style.cssText = 'font-size:11px;padding:4px 10px;';
+            browseBtn.onclick = async () => {
+                try {
+                    const resp = await authFetch('/changbai/api/admin/media-list');
+                    if (resp.status === 401) { showLogin(); return; }
+                    const json = await resp.json();
+                    if (!json.success || json.files.length === 0) { showToast('媒体库为空', true); return; }
+                    const overlay = document.createElement('div');
+                    overlay.className = 'modal-overlay';
+                    const imgFiles = json.files.filter(f => /\.(jpg|jpeg|png|gif|webp)$/i.test(f.name));
+                    overlay.innerHTML = '<div class="modal-box" style="width:500px;max-height:70vh;overflow-y:auto;"><h3>从媒体库选取图片</h3>' +
+                        '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">' +
+                        imgFiles.map(f => '<div style="cursor:pointer;border:2px solid transparent;border-radius:6px;overflow:hidden;transition:border 0.2s;" ' +
+                            'onclick="document.getElementById(\'selectedMedia_val\').value=\'' + btoa('/changbai' + f.url) + '\';document.querySelectorAll(\'.media-select-item\').forEach(e=>e.style.borderColor=\'transparent\');this.style.borderColor=\'#00d4ff\';" class="media-select-item">' +
+                            '<img src="/changbai' + f.url + '" style="width:100%;height:80px;object-fit:cover;">' +
+                            '<div style="font-size:10px;padding:4px;color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + f.name + '</div></div>').join('') +
+                        '</div>' +
+                        '<input type="hidden" id="selectedMedia_val">' +
+                        '<div class="modal-actions" style="margin-top:14px;">' +
+                        '<button class="btn" onclick="this.closest(\'.modal-overlay\').remove()">取消</button>' +
+                        '<button class="btn btn-primary" id="btnPickMedia">✅ 选取</button></div></div>';
+                    document.body.append(overlay);
+                    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+                    overlay.querySelector('#btnPickMedia').onclick = () => {
+                        const sel = document.getElementById('selectedMedia_val').value;
+                        if (!sel) { showToast('请先选择图片', true); return; }
+                        const path = atob(sel);
+                        item[key] = path;
+                        inp.value = path;
+                        preview.src = path;
+                        preview.style.display = '';
+                        overlay.remove();
+                    };
+                } catch(err) { showToast('❌ 加载失败', true); }
+            };
+            btnRow.append(uploadBtn, browseBtn, fileInp);
+            inputGroup.append(btnRow);
+            imgWrap.append(inputGroup);
+            fRow.append(imgWrap);
+        }
+
+        // 视频类型：上传 + URL + 预览播放
+        function renderVideoEditor(fRow, key, value, item) {
+            fRow.style.cssText = 'display:flex;flex-direction:column;gap:8px;margin-bottom:8px;';
+            const inputGroup = document.createElement('div');
+            inputGroup.style.cssText = 'display:flex;flex-direction:column;gap:6px;width:100%;';
+
+            const inp = mkInput('text', value);
+            inp.placeholder = '视频路径（可手动输入或上传后自动填入）';
+            inp.onchange = () => { item[key] = inp.value; updateVideoPreview(); };
+            inputGroup.append(inp);
+
+            // 视频预览
+            const previewWrap = document.createElement('div');
+            previewWrap.style.cssText = 'width:100%;max-width:400px;';
+            const videoEl = document.createElement('video');
+            videoEl.style.cssText = 'width:100%;max-height:200px;background:#000;border-radius:6px;display:none;';
+            videoEl.controls = true;
+            videoEl.preload = 'metadata';
+            videoEl.onerror = () => { videoEl.style.display = 'none'; };
+            previewWrap.append(videoEl);
+
+            function updateVideoPreview() {
+                const v = item[key];
+                if (v && (v.startsWith('/') || v.startsWith('http'))) {
+                    videoEl.src = v;
+                    videoEl.style.display = '';
+                } else {
+                    videoEl.src = '';
+                    videoEl.style.display = 'none';
+                }
+            }
+            updateVideoPreview();
+
+            // 上传 + 媒体库按钮
+            const btnRow = document.createElement('div');
+            btnRow.style.cssText = 'display:flex;gap:6px;';
+
+            const uploadBtn = document.createElement('button');
+            uploadBtn.className = 'btn btn-sm';
+            uploadBtn.textContent = '🎬 上传视频';
+            uploadBtn.style.cssText = 'font-size:11px;padding:4px 10px;';
+            const fileInp = document.createElement('input');
+            fileInp.type = 'file';
+            fileInp.accept = 'video/*';
+            fileInp.style.display = 'none';
+            uploadBtn.onclick = () => fileInp.click();
+            fileInp.onchange = async () => {
+                const file = fileInp.files[0];
+                if (!file) return;
+                uploadBtn.textContent = '⏳ 上传中...';
+                uploadBtn.disabled = true;
+                try {
+                    const fd = new FormData();
+                    fd.append('file', file);
+                    const resp = await authFetch('/changbai/api/admin/upload-media', { method: 'POST', body: fd });
+                    if (resp.status === 401) { showLogin(); return; }
+                    const json = await resp.json();
+                    if (json.success) {
+                        const localPath = '/changbai' + json.url;
+                        item[key] = localPath;
+                        inp.value = localPath;
+                        updateVideoPreview();
+                        showToast('✅ 上传成功');
+                    } else {
+                        showToast('❌ 上传失败: ' + json.error, true);
+                    }
+                } catch(err) {
+                    showToast('❌ 上传失败: ' + err.message, true);
+                }
+                uploadBtn.textContent = '🎬 上传视频';
+                uploadBtn.disabled = false;
+                fileInp.value = '';
+            };
+
+            const browseBtn = document.createElement('button');
+            browseBtn.className = 'btn btn-sm';
+            browseBtn.textContent = '📁 从媒体库选视频';
+            browseBtn.style.cssText = 'font-size:11px;padding:4px 10px;';
+            browseBtn.onclick = async () => {
+                try {
+                    const resp = await authFetch('/changbai/api/admin/media-list');
+                    if (resp.status === 401) { showLogin(); return; }
+                    const json = await resp.json();
+                    if (!json.success || json.files.length === 0) { showToast('媒体库为空', true); return; }
+                    const overlay = document.createElement('div');
+                    overlay.className = 'modal-overlay';
+                    const vidFiles = json.files.filter(f => /\.(mp4|webm|avi|mov|mkv)$/i.test(f.name));
+                    overlay.innerHTML = '<div class="modal-box" style="width:500px;max-height:70vh;overflow-y:auto;"><h3>从媒体库选取视频</h3>' +
+                        '<div style="display:flex;flex-direction:column;gap:8px;">' +
+                        vidFiles.map(f => '<div style="cursor:pointer;border:2px solid transparent;border-radius:6px;padding:6px;display:flex;align-items:center;gap:8px;transition:border 0.2s;background:rgba(0,212,255,0.05);" ' +
+                            'onclick="document.getElementById(\'selectedMedia_val\').value=\'' + btoa('/changbai' + f.url) + '\';document.querySelectorAll(\'.media-select-item\').forEach(e=>e.style.borderColor=\'transparent\');this.style.borderColor=\'#00d4ff\';" class="media-select-item">' +
+                            '<span style="font-size:24px;">🎬</span>' +
+                            '<div><div style="font-size:13px;color:#e0e0e0;">' + f.name + '</div>' +
+                            '<div style="font-size:10px;color:#666;">' + new Date(f.time).toLocaleString() + '</div></div></div>').join('') +
+                        '</div>' +
+                        '<input type="hidden" id="selectedMedia_val">' +
+                        '<div class="modal-actions" style="margin-top:14px;">' +
+                        '<button class="btn" onclick="this.closest(\'.modal-overlay\').remove()">取消</button>' +
+                        '<button class="btn btn-primary" id="btnPickMedia">✅ 选取</button></div></div>';
+                    document.body.append(overlay);
+                    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+                    overlay.querySelector('#btnPickMedia').onclick = () => {
+                        const sel = document.getElementById('selectedMedia_val').value;
+                        if (!sel) { showToast('请先选择视频', true); return; }
+                        const path = atob(sel);
+                        item[key] = path;
+                        inp.value = path;
+                        updateVideoPreview();
+                        overlay.remove();
+                    };
+                } catch(err) { showToast('❌ 加载失败', true); }
+            };
+            btnRow.append(uploadBtn, browseBtn, fileInp);
+
+            inputGroup.append(btnRow, previewWrap);
+            fRow.append(inputGroup);
+        }
+
+        // RTSP 流类型：配置参数表
+        function renderRtspEditor(fRow, item) {
+            fRow.style.cssText = 'display:flex;flex-direction:column;gap:6px;margin-bottom:8px;width:100%;';
+
+            // 确保 RTSP 配置字段存在
+            if (!item.rtsp_url) item.rtsp_url = '';
+            if (!item.rtsp_username) item.rtsp_username = '';
+            if (!item.rtsp_password) item.rtsp_password = '';
+
+            const rtspFields = [
+                { key: 'rtsp_url', label: 'RTSP 地址', placeholder: 'rtsp://192.168.1.100:554/stream1', type: 'text' },
+                { key: 'rtsp_username', label: '用户名', placeholder: 'admin', type: 'text' },
+                { key: 'rtsp_password', label: '密码', placeholder: '输入密码', type: 'password' },
+            ];
+
+            const table = document.createElement('table');
+            table.style.cssText = 'width:100%;border-collapse:collapse;font-size:12px;';
+            rtspFields.forEach(f => {
+                const tr = document.createElement('tr');
+                const tdLabel = document.createElement('td');
+                tdLabel.style.cssText = 'padding:4px 8px;color:#888;white-space:nowrap;width:80px;';
+                tdLabel.textContent = f.label + '：';
+                const tdVal = document.createElement('td');
+                tdVal.style.cssText = 'padding:4px 0;';
+                const inp = mkInput(f.type, item[f.key]);
+                inp.placeholder = f.placeholder;
+                inp.style.cssText = 'width:100%;';
+                inp.onchange = () => { item[f.key] = inp.value; };
+                tdVal.append(inp);
+                tr.append(tdLabel, tdVal);
+                table.append(tr);
+            });
+
+            // 预览区域：显示 RTSP 流截图或占位
+            const previewArea = document.createElement('div');
+            previewArea.style.cssText = 'margin-top:6px;padding:10px;background:rgba(0,212,255,0.05);border-radius:6px;text-align:center;';
+            const statusDot = document.createElement('span');
+            statusDot.style.cssText = 'display:inline-block;width:8px;height:8px;border-radius:50%;background:#666;margin-right:6px;';
+            const statusText = document.createElement('span');
+            statusText.style.cssText = 'font-size:12px;color:#888;';
+            statusText.textContent = 'RTSP 流地址配置（大屏端通过流媒体服务解析播放）';
+            previewArea.append(statusDot, statusText);
+
+            fRow.append(table, previewArea);
+        }
+
         // ─── 表单渲染 ───
         function buildCard(title, key, fn) {
             const card = document.createElement('div');
@@ -771,7 +1044,7 @@
                                         fRow.append(sel);
                                     } else if (subK === 'media_type') {
                                         const sel = mkSelect([['image','图片'],['video','视频'],['mp4','MP4视频'],['rtsp','RTSP流']], subVal);
-                                        sel.onchange = () => { item[subK] = sel.value; };
+                                        sel.onchange = () => { item[subK] = sel.value; renderItems(); };
                                         fRow.append(sel);
                                     } else if (subK === 'status') {
                                         const sel = mkSelect([['online','在线'],['offline','离线'],['alert','告警'],['connecting','接入中'],['warning','预警'],['待命','待命'],['处理中','处理中'],['待处理','待处理'],['已处置','已处置']], subVal);
@@ -790,112 +1063,15 @@
                                         sel.onchange = () => { item[subK] = sel.value === 'true'; };
                                         fRow.append(sel);
                                     } else if (subK === 'img' && k === 'cameras') {
-                                        // 监控画面：图片上传 + URL 双模式
-                                        const imgWrap = document.createElement('div');
-                                        imgWrap.className = 'img-upload-wrap';
-                                        const preview = document.createElement('img');
-                                        preview.className = 'img-upload-preview';
-                                        preview.src = subVal || '';
-                                        preview.onerror = () => { preview.src = ''; preview.style.display = 'none'; };
-                                        if (!subVal) preview.style.display = 'none';
-                                        imgWrap.append(preview);
-                                        const inputGroup = document.createElement('div');
-                                        inputGroup.className = 'img-upload-input-group';
-                                        const inp = mkInput('text', subVal);
-                                        inp.placeholder = '图片路径（可手动输入或上传后自动填入）';
-                                        inp.onchange = () => {
-                                            item[subK] = inp.value;
-                                            if (inp.value) {
-                                                preview.src = inp.value;
-                                                preview.style.display = '';
-                                            } else {
-                                                preview.style.display = 'none';
-                                            }
-                                        };
-                                        inputGroup.append(inp);
-                                        const btnRow = document.createElement('div');
-                                        btnRow.style.cssText = 'display:flex;gap:6px;';
-                                        const uploadBtn = document.createElement('button');
-                                        uploadBtn.className = 'btn btn-sm';
-                                        uploadBtn.textContent = '📷 上传图片';
-                                        uploadBtn.style.cssText = 'font-size:11px;padding:4px 10px;';
-                                        const fileInp = document.createElement('input');
-                                        fileInp.type = 'file';
-                                        fileInp.accept = 'image/*,video/*';
-                                        fileInp.style.display = 'none';
-                                        uploadBtn.onclick = () => fileInp.click();
-                                        fileInp.onchange = async () => {
-                                            const file = fileInp.files[0];
-                                            if (!file) return;
-                                            uploadBtn.textContent = '⏳ 上传中...';
-                                            uploadBtn.disabled = true;
-                                            try {
-                                                const fd = new FormData();
-                                                fd.append('file', file);
-                                                const resp = await authFetch('/changbai/api/admin/upload-media', { method: 'POST', body: fd });
-                                                if (resp.status === 401) { showLogin(); return; }
-                                                const json = await resp.json();
-                                                if (json.success) {
-                                                    const localPath = '/changbai' + json.url;
-                                                    item[subK] = localPath;
-                                                    inp.value = localPath;
-                                                    preview.src = localPath;
-                                                    preview.style.display = '';
-                                                    showToast('✅ 上传成功，路径已自动填入');
-                                                } else {
-                                                    showToast('❌ 上传失败: ' + json.error, true);
-                                                }
-                                            } catch(err) {
-                                                showToast('❌ 上传失败: ' + err.message, true);
-                                            }
-                                            uploadBtn.textContent = '📷 上传图片';
-                                            uploadBtn.disabled = false;
-                                            fileInp.value = '';
-                                        };
-                                        const browseBtn = document.createElement('button');
-                                        browseBtn.className = 'btn btn-sm';
-                                        browseBtn.textContent = '📁 媒体库选取';
-                                        browseBtn.style.cssText = 'font-size:11px;padding:4px 10px;';
-                                        browseBtn.onclick = async () => {
-                                            try {
-                                                const resp = await authFetch('/changbai/api/admin/media-list');
-                                                if (resp.status === 401) { showLogin(); return; }
-                                                const json = await resp.json();
-                                                if (!json.success || json.files.length === 0) { showToast('媒体库为空', true); return; }
-                                                // 弹出选取框
-                                                const overlay = document.createElement('div');
-                                                overlay.className = 'modal-overlay';
-                                                const imgFiles = json.files.filter(f => /\.(jpg|jpeg|png|gif|webp)$/i.test(f.name));
-                                                overlay.innerHTML = '<div class="modal-box" style="width:500px;max-height:70vh;overflow-y:auto;"><h3>从媒体库选取图片</h3>' +
-                                                    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">' +
-                                                    imgFiles.map(f => '<div style="cursor:pointer;border:2px solid transparent;border-radius:6px;overflow:hidden;transition:border 0.2s;" ' +
-                                                        'onclick="document.getElementById(\'selectedImg\').value=\'' + btoa('/changbai' + f.url) + '\';document.querySelectorAll(\'.media-select-item\').forEach(e=>e.style.borderColor=\'transparent\');this.style.borderColor=\'#00d4ff\';" class="media-select-item">' +
-                                                        '<img src="/changbai' + f.url + '" style="width:100%;height:80px;object-fit:cover;">' +
-                                                        '<div style="font-size:10px;padding:4px;color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + f.name + '</div></div>').join('') +
-                                                    '</div>' +
-                                                    '<input type="hidden" id="selectedImg">' +
-                                                    '<div class="modal-actions" style="margin-top:14px;">' +
-                                                    '<button class="btn" onclick="this.closest(\'.modal-overlay\').remove()">取消</button>' +
-                                                    '<button class="btn btn-primary" id="btnPickImg">✅ 选取</button></div></div>';
-                                                document.body.append(overlay);
-                                                overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
-                                                overlay.querySelector('#btnPickImg').onclick = () => {
-                                                    const sel = document.getElementById('selectedImg').value;
-                                                    if (!sel) { showToast('请先选择图片', true); return; }
-                                                    const path = atob(sel);
-                                                    item[subK] = path;
-                                                    inp.value = path;
-                                                    preview.src = path;
-                                                    preview.style.display = '';
-                                                    overlay.remove();
-                                                };
-                                            } catch(err) { showToast('❌ 加载失败', true); }
-                                        };
-                                        btnRow.append(uploadBtn, browseBtn, fileInp);
-                                        inputGroup.append(btnRow);
-                                        imgWrap.append(inputGroup);
-                                        fRow.style.cssText = 'display:flex;gap:8px;margin-bottom:8px;align-items:flex-start;';
-                                        fRow.append(imgWrap);
+                                        // 根据 media_type 动态显示不同的操作界面
+                                        const mt = item.media_type || 'image';
+                                        if (mt === 'image') {
+                                            renderImageEditor(fRow, subK, subVal, item);
+                                        } else if (mt === 'video' || mt === 'mp4') {
+                                            renderVideoEditor(fRow, subK, subVal, item);
+                                        } else if (mt === 'rtsp') {
+                                            renderRtspEditor(fRow, item);
+                                        }
                                     } else {
                                         const inp = mkInput('text', subVal);
                                         inp.onchange = () => { item[subK] = inp.value; };
