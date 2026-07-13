@@ -1043,7 +1043,7 @@
                                         sel.onchange = () => { item[subK] = sel.value === 'true'; };
                                         fRow.append(sel);
                                     } else if (subK === 'media_type') {
-                                        const sel = mkSelect([['image','图片'],['video','视频'],['mp4','MP4视频'],['rtsp','RTSP流']], subVal);
+                                        const sel = mkSelect([['image','图片'],['video','视频'],['rtsp','RTSP流']], subVal);
                                         sel.onchange = () => { item[subK] = sel.value; renderItems(); };
                                         fRow.append(sel);
                                     } else if (subK === 'status') {
