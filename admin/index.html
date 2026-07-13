@@ -83,6 +83,155 @@
         .btn-danger:active { transform: scale(0.96); }
         .btn-sm { padding: 4px 12px; font-size: 12px; }
 
+        /* ─── 用户菜单 ─── */
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            padding: 4px 10px;
+            border-radius: 6px;
+            transition: background 0.2s;
+            position: relative;
+        }
+        .user-info:hover { background: rgba(255,255,255,0.08); }
+        .user-avatar {
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            background: rgba(0, 212, 255, 0.15);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        .user-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .user-name { color: #00d4ff; font-size: 13px; white-space: nowrap; }
+        .user-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 8px;
+            background: #001a33;
+            border: 1px solid rgba(0, 212, 255, 0.25);
+            border-radius: 8px;
+            min-width: 150px;
+            z-index: 100;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+            overflow: hidden;
+        }
+        .user-dropdown.show { display: block; }
+        .user-dropdown button {
+            display: block;
+            width: 100%;
+            padding: 10px 16px;
+            border: none;
+            background: transparent;
+            color: #b0b8c4;
+            cursor: pointer;
+            font-size: 13px;
+            text-align: left;
+            transition: background 0.15s;
+        }
+        .user-dropdown button:hover { background: rgba(255,255,255,0.08); }
+        .user-dropdown button.logout { color: #f87171; }
+        .user-dropdown button.logout:hover { background: rgba(239,68,68,0.1); }
+
+        /* ─── 设置弹窗 ─── */
+        .settings-modal .modal {
+            width: 440px;
+            max-width: 95vw;
+            background: linear-gradient(135deg, #001a33, #0a2a4a);
+        }
+        .settings-modal .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 24px 0;
+        }
+        .settings-modal .modal-header h2 { font-size: 16px; color: #00d4ff; margin: 0; }
+        .settings-modal .modal-close {
+            width: 28px; height: 28px;
+            border: 1px solid rgba(255,255,255,0.15);
+            background: transparent;
+            color: #888;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .settings-modal .modal-close:hover { color: #fff; border-color: rgba(255,255,255,0.3); }
+        .settings-modal .modal-body { padding: 20px 24px; }
+        .settings-modal .avatar-section {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+        .settings-modal .avatar-upload-area {
+            width: 72px; height: 72px;
+            border-radius: 50%;
+            border: 2px dashed rgba(0, 212, 255, 0.35);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            overflow: hidden;
+            transition: border-color 0.2s, transform 0.2s;
+            flex-shrink: 0;
+        }
+        .settings-modal .avatar-upload-area:hover { border-color: rgba(0, 212, 255, 0.7); transform: scale(1.05); }
+        .settings-modal .avatar-upload-area img { width: 100%; height: 100%; object-fit: cover; }
+        .settings-modal .avatar-upload-area .placeholder { font-size: 30px; }
+        .settings-modal .avatar-hint { font-size: 12px; color: #666; }
+        .settings-modal .form-group { display: flex; flex-direction: column; gap: 12px; }
+        .settings-modal .form-row { display: flex; align-items: center; gap: 12px; }
+        .settings-modal .form-row label { width: 80px; color: #888; font-size: 13px; flex-shrink: 0; text-align: right; }
+        .settings-modal .form-row input[type="password"],
+        .settings-modal .form-row input[type="text"] {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            background: rgba(0, 26, 51, 0.8);
+            color: #e0e0e0;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+        .settings-modal .form-row input::placeholder { color: #555; }
+        .settings-modal .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            padding: 16px 24px 20px;
+            border-top: 1px solid rgba(0, 212, 255, 0.1);
+        }
+        .btn-cancel {
+            padding: 8px 18px;
+            border: 1px solid rgba(255,255,255,0.15);
+            background: transparent;
+            color: #888;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        .btn-cancel:hover { color: #fff; border-color: rgba(255,255,255,0.3); }
+        .btn-save {
+            padding: 8px 22px;
+            border: none;
+            background: #00d4ff;
+            color: #001a33;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        .btn-save:hover { background: #00b8e0; }
+
+        @media (max-width: 600px) {
+            .settings-modal .modal { width: 95vw; }
+            .settings-modal .form-row { flex-direction: column; align-items: flex-start; gap: 4px; }
+            .settings-modal .form-row label { text-align: left; }
+        }
+
         .content {
             flex: 1;
             overflow-y: auto;
@@ -302,13 +451,57 @@
     <div class="main">
         <div class="topbar">
             <h2 id="pageTitle">综合态势配置</h2>
-            <div>
-                <span id="currentUserName" style="color:#00d4ff;margin-right:12px;font-size:13px;"></span>
-                <button class="btn btn-danger btn-sm" id="btnLogout" style="display:none;">🚪 退出</button>
-
+            <div style="display:flex;align-items:center;gap:12px;">
+                <div class="user-info" id="user-info" style="display:none;" onclick="toggleUserMenu(event)">
+                    <div class="user-avatar" id="user-avatar"><span>👤</span></div>
+                    <span class="user-name" id="user-name">admin</span>
+                    <span style="font-size:10px;color:#666;">▼</span>
+                    <div class="user-dropdown" id="user-dropdown">
+                        <button onclick="openSettingsModal(event)">⚙️ 账号设置</button>
+                        <button class="logout" onclick="doLogout(event)">🚪 退出登录</button>
+                    </div>
+                </div>
             </div>
         </div>
         <div class="content" id="contentArea"></div>
+    </div>
+
+    <!-- 账号设置弹窗 -->
+    <div class="modal-overlay settings-modal" id="settings-overlay" style="display:none;">
+        <div class="modal">
+            <div class="modal-header">
+                <span></span>
+                <h2>⚙️ 账号设置</h2>
+                <button class="modal-close" onclick="closeSettingsModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="avatar-section">
+                    <div class="avatar-upload-area" id="settings-avatar-area" onclick="document.getElementById('settings-avatar-upload').click()">
+                        <span class="placeholder">👤</span>
+                    </div>
+                    <span class="avatar-hint">点击更换头像</span>
+                    <input type="file" id="settings-avatar-upload" accept="image/*" style="display:none" onchange="handleAvatarUpload(event)">
+                </div>
+                <div class="form-group">
+                    <div class="form-row">
+                        <label>当前密码</label>
+                        <input type="password" id="settings-current-pass" placeholder="输入当前密码">
+                    </div>
+                    <div class="form-row">
+                        <label>新密码</label>
+                        <input type="password" id="settings-new-pass" placeholder="至少6位字符">
+                    </div>
+                    <div class="form-row">
+                        <label>确认新密码</label>
+                        <input type="password" id="settings-confirm-pass" placeholder="再次输入新密码">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeSettingsModal()">取消</button>
+                <button class="btn-save" onclick="saveSettings()">保存</button>
+            </div>
+        </div>
     </div>
 
     <div class="toast" id="toast"></div>
@@ -367,8 +560,8 @@
                     sessionStorage.setItem('changbai_user', JSON.stringify(currentUser));
                     document.getElementById('loginOverlay').style.display = 'none';
                     document.getElementById('loginError').style.display = 'none';
-                    document.getElementById('currentUserName').textContent = '👤 ' + currentUser.username + (currentUser.role === 'admin' ? ' (管理员)' : '');
-                    document.getElementById('btnLogout').style.display = 'inline-block';
+                    updateUserDisplay();
+                    loadAvatar();
                     if (currentUser.role !== 'admin') {
                         // 非管理员隐藏用户管理入口
                         const userNav = document.querySelector('.nav-item[data-page="users"]');
@@ -393,8 +586,7 @@
             sessionStorage.removeItem('changbai_token');
             sessionStorage.removeItem('changbai_user');
             document.getElementById('loginOverlay').style.display = 'flex';
-            document.getElementById('currentUserName').textContent = '';
-            document.getElementById('btnLogout').style.display = 'none';
+            document.getElementById('user-info').style.display = 'none';
             document.getElementById('loginUser').value = '';
             document.getElementById('loginPass').value = '';
             document.getElementById('contentArea').innerHTML = '';
@@ -403,9 +595,129 @@
         // 登录按钮
         document.getElementById('btnLogin').addEventListener('click', doLogin);
         document.getElementById('loginPass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
-        document.getElementById('btnLogout').addEventListener('click', doLogout);
 
-        // 验证 token 有效性
+        // ─── 用户菜单 ───
+        function updateUserDisplay() {
+            const ui = document.getElementById('user-info');
+            const un = document.getElementById('user-name');
+            if (currentUser) {
+                ui.style.display = 'flex';
+                un.textContent = currentUser.username + (currentUser.role === 'admin' ? ' (管理员)' : '');
+            } else {
+                ui.style.display = 'none';
+            }
+        }
+
+        function toggleUserMenu(e) {
+            if (e) e.stopPropagation();
+            document.getElementById('user-dropdown').classList.toggle('show');
+        }
+        document.addEventListener('click', () => {
+            document.getElementById('user-dropdown').classList.remove('show');
+        });
+
+        // ─── 账号设置弹窗 ───
+        function openSettingsModal(e) {
+            if (e) e.stopPropagation();
+            document.getElementById('user-dropdown').classList.remove('show');
+            document.getElementById('settings-overlay').style.display = 'flex';
+            document.getElementById('settings-current-pass').value = '';
+            document.getElementById('settings-new-pass').value = '';
+            document.getElementById('settings-confirm-pass').value = '';
+            loadAvatar();
+        }
+        function closeSettingsModal() {
+            document.getElementById('settings-overlay').style.display = 'none';
+        }
+
+        async function saveSettings() {
+            const currentPass = document.getElementById('settings-current-pass').value;
+            const newPass = document.getElementById('settings-new-pass').value;
+            const confirmPass = document.getElementById('settings-confirm-pass').value;
+
+            if (newPass || confirmPass) {
+                if (!currentPass) { showToast('请输入当前密码', true); return; }
+                if (newPass !== confirmPass) { showToast('两次输入的新密码不一致', true); return; }
+                if (newPass.length < 6) { showToast('密码至少6位', true); return; }
+
+                // 验证当前密码
+                try {
+                    const res = await authFetch('/changbai/api/auth/login', {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username: currentUser.username, password: currentPass })
+                    });
+                    if (!res.ok) { showToast('当前密码错误', true); return; }
+                } catch(e) { showToast('网络错误', true); return; }
+            }
+
+            const payload = {};
+            if (newPass) payload.password = newPass;
+
+            try {
+                const res = await authFetch('/changbai/api/auth/settings', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('✅ 保存成功', false);
+                    closeSettingsModal();
+                    if (newPass) {
+                        // 用新密码重新登录
+                        try {
+                            const res2 = await authFetch('/changbai/api/auth/login', {
+                                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ username: currentUser.username, password: newPass })
+                            });
+                            const data2 = await res2.json();
+                            if (data2.success && data2.token) {
+                                authToken = data2.token;
+                                sessionStorage.setItem('changbai_token', authToken);
+                            }
+                        } catch(e) {}
+                    }
+                } else {
+                    showToast('❌ ' + (data.error || '保存失败'), true);
+                }
+            } catch(e) { showToast('网络错误', true); }
+        }
+
+        function handleAvatarUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const avatarData = e.target.result;
+                document.getElementById('settings-avatar-area').innerHTML = '<img src="' + avatarData + '">';
+                document.getElementById('user-avatar').innerHTML = '<img src="' + avatarData + '">';
+                try {
+                    await authFetch('/changbai/api/auth/settings', {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ avatar: avatarData })
+                    });
+                } catch(e) {}
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function loadAvatar() {
+            try {
+                const res = await authFetch('/changbai/api/auth/settings');
+                const data = await res.json();
+                if (data.avatar) {
+                    const avatarHtml = '<img src="' + data.avatar + '">';
+                    document.getElementById('settings-avatar-area').innerHTML = avatarHtml;
+                    document.getElementById('user-avatar').innerHTML = avatarHtml;
+                }
+            } catch(e) {}
+        }
+
+        // 设置弹窗点击遮罩关闭
+        document.getElementById('settings-overlay').addEventListener('click', function(e) {
+            if (e.target === this) closeSettingsModal();
+        });
+
+        // ─── 验证 token 有效性 ───
         async function checkAuth() {
             if (!authToken) { showLogin(); return false; }
             try {
@@ -414,8 +726,8 @@
                 const json = await resp.json();
                 if (json.success) {
                     currentUser = json.user;
-                    document.getElementById('currentUserName').textContent = '👤 ' + currentUser.username + (currentUser.role === 'admin' ? ' (管理员)' : '');
-                    document.getElementById('btnLogout').style.display = 'inline-block';
+                    updateUserDisplay();
+                    loadAvatar();
                     if (currentUser.role !== 'admin') {
                         const userNav = document.querySelector('.nav-item[data-page="users"]');
                         if (userNav) userNav.style.display = 'none';

@@ -148,7 +148,32 @@ app.post('/api/auth/login', (req, res) => {
 });
 
 app.get('/api/auth/me', authMiddleware, (req, res) => {
-  res.json({ success: true, user: { id: req.user.id, username: req.user.username, role: req.user.role, createdAt: req.user.createdAt } });
+  res.json({ success: true, user: { id: req.user.id, username: req.user.username, role: req.user.role, avatar: req.user.avatar, createdAt: req.user.createdAt } });
+});
+
+// ─── 账号设置（头像、密码等） ───
+app.get('/api/auth/settings', authMiddleware, (req, res) => {
+  const users = readUsers();
+  const user = users.find(u => u.id === req.user.id);
+  if (!user) return res.status(404).json({ error: '用户不存在' });
+  res.json({ success: true, avatar: user.avatar || '', username: user.username });
+});
+
+app.post('/api/auth/settings', authMiddleware, (req, res) => {
+  const { password, avatar } = req.body;
+  const users = readUsers();
+  const idx = users.findIndex(u => u.id === req.user.id);
+  if (idx === -1) return res.status(404).json({ error: '用户不存在' });
+
+  if (password) {
+    if (password.length < 6) return res.status(400).json({ error: '密码至少6位' });
+    users[idx].password = hashPassword(password);
+  }
+  if (avatar !== undefined) {
+    users[idx].avatar = avatar;
+  }
+  writeUsers(users);
+  res.json({ success: true, message: '设置已保存' });
 });
 
 // ─── API: 用户管理（需管理员权限） ───
