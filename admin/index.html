@@ -726,129 +726,64 @@
                     const overlay = document.createElement('div');
                     overlay.className = 'modal-overlay';
                     const imgFiles = json.files.filter(f => /\.(jpg|jpeg|png|gif|webp)$/i.test(f.name));
-                    overlay.innerHTML = '<div class="modal-box" style="width:560px;max-height:70vh;overflow-y:auto;"><h3>从媒体库选取图片</h3>' +
+                    overlay.innerHTML = '<div class="modal-box" style="width:520px;max-height:70vh;overflow-y:auto;"><h3>从媒体库选取图片</h3>' +
+                        '<p style="font-size:11px;color:#666;margin-bottom:10px;">点击缩略图选中 | 双击放大预览</p>' +
                         '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">' +
-                        imgFiles.map((f, i) => '<div class="media-select-item media-img-item" style="border:2px solid transparent;border-radius:6px;overflow:hidden;transition:border 0.2s;background:rgba(0,212,255,0.05);" data-url="/changbai' + f.url + '" data-idx="' + i + '">' +
-                            '<img src="/changbai' + f.url + '" style="width:100%;height:80px;object-fit:cover;cursor:pointer;" class="media-img-thumb">' +
+                        imgFiles.map((f, i) => '<div class="media-select-item media-img-item" style="border:2px solid transparent;border-radius:6px;overflow:hidden;transition:border 0.2s;background:rgba(0,212,255,0.05);cursor:pointer;" data-url="/changbai' + f.url + '" data-idx="' + i + '" data-name="' + f.name.replace(/"/g,'&quot;') + '">' +
+                            '<img src="/changbai' + f.url + '" style="width:100%;height:80px;object-fit:cover;pointer-events:none;">' +
                             '<div style="font-size:10px;padding:4px;color:#aaa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + f.name + '</div>' +
-                            '<div style="display:flex;gap:2px;padding:0 4px 4px;">' +
-                            '<button class="btn btn-sm media-preview-btn" data-idx="' + i + '" style="font-size:10px;padding:1px 5px;flex:1;">🔍 预览</button>' +
-                            '<button class="btn btn-sm btn-primary media-select-btn" data-idx="' + i + '" style="font-size:10px;padding:1px 5px;flex:1;">✓</button>' +
-                            '<button class="btn btn-sm media-delete-btn" data-idx="' + i + '" data-name="' + f.name.replace(/"/g,'&quot;') + '" data-imgurl="/changbai' + f.url + '" style="font-size:10px;padding:1px 5px;flex:1;background:rgba(255,80,80,0.15);color:#ff5050;border-color:rgba(255,80,80,0.3);">🗑</button>' +
-                            '</div></div>').join('') +
+                            '</div>').join('') +
                         '</div>' +
                         '<input type="hidden" id="selectedMedia_val">' +
+                        '<input type="hidden" id="selectedMedia_name">' +
                         '<div class="modal-actions" style="margin-top:14px;">' +
                         '<button class="btn" onclick="this.closest(\'.modal-overlay\').remove()">取消</button>' +
-                        '<button class="btn btn-primary" id="btnPickMedia">✅ 选取</button></div></div>';
+                        '<button class="btn btn-primary" id="btnPickMedia">✅ 选取选中图片</button>' +
+                        '<button class="btn" id="btnDelMedia" style="background:rgba(255,80,80,0.15);color:#ff5050;border-color:rgba(255,80,80,0.3);">🗑 删除选中图片</button>' +
+                        '</div></div>';
                     document.body.append(overlay);
                     overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
 
-                    // 图片点击选中
-                    overlay.querySelectorAll('.media-img-thumb').forEach(img => {
-                        img.addEventListener('click', function(e) {
-                            e.stopPropagation();
-                            const parent = this.closest('.media-img-item');
-                            const url = parent.dataset.url;
-                            const idx = parent.dataset.idx;
-                            document.getElementById('selectedMedia_val').value = btoa(url);
-                            overlay.querySelectorAll('.media-img-item').forEach(el => el.style.borderColor = 'transparent');
-                            parent.style.borderColor = '#00d4ff';
-                        });
-                    });
+                    const selInput = document.getElementById('selectedMedia_val');
+                    const nameInput = document.getElementById('selectedMedia_name');
+                    const delBtn = overlay.querySelector('#btnDelMedia');
+                    delBtn.disabled = true;
+                    delBtn.style.opacity = '0.5';
 
-                    // 选择按钮
-                    overlay.querySelectorAll('.media-select-btn').forEach(btn => {
-                        btn.onclick = (e) => {
-                            e.stopPropagation();
-                            const parent = btn.closest('.media-img-item');
-                            const url = parent.dataset.url;
-                            const idx = parent.dataset.idx;
-                            document.getElementById('selectedMedia_val').value = btoa(url);
-                            overlay.querySelectorAll('.media-img-item').forEach(el => el.style.borderColor = 'transparent');
-                            parent.style.borderColor = '#00d4ff';
-                            closeImagePreview();
-                        };
-                    });
-
-                    // 预览按钮 — 全屏大图预览
-                    let currentPreviewOverlay = null;
-                    function closeImagePreview() {
-                        if (currentPreviewOverlay) { currentPreviewOverlay.remove(); currentPreviewOverlay = null; }
+                    function selectImg(item, url, name) {
+                        selInput.value = btoa(url);
+                        nameInput.value = name;
+                        overlay.querySelectorAll('.media-img-item').forEach(el => el.style.borderColor = 'transparent');
+                        item.style.borderColor = '#00d4ff';
+                        delBtn.disabled = false;
+                        delBtn.style.opacity = '1';
                     }
-                    overlay.querySelectorAll('.media-preview-btn').forEach(btn => {
-                        btn.onclick = (e) => {
-                            e.stopPropagation();
-                            const parent = btn.closest('.media-img-item');
-                            const url = parent.dataset.url;
-                            closeImagePreview();
+
+                    // 点击缩略图选中，双击预览
+                    overlay.querySelectorAll('.media-img-item').forEach(item => {
+                        item.addEventListener('click', function(e) {
+                            const url = this.dataset.url;
+                            const name = this.dataset.name;
+                            selectImg(this, url, name);
+                        });
+                        item.addEventListener('dblclick', function(e) {
+                            const url = this.dataset.url;
                             const prevOverlay = document.createElement('div');
                             prevOverlay.className = 'modal-overlay';
                             prevOverlay.style.zIndex = '10002';
                             prevOverlay.style.cursor = 'zoom-out';
                             prevOverlay.innerHTML = '<div style="position:relative;max-width:90vw;max-height:90vh;">' +
                                 '<img src="' + url + '" style="max-width:90vw;max-height:85vh;object-fit:contain;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,0.6);">' +
-                                '<div style="text-align:center;margin-top:8px;color:#aaa;font-size:12px;">点击任意处关闭 | 滚轮缩放</div>' +
+                                '<div style="text-align:center;margin-top:8px;color:#aaa;font-size:12px;">点击任意处关闭</div>' +
                                 '</div>';
-                            prevOverlay.addEventListener('click', () => closeImagePreview());
+                            prevOverlay.addEventListener('click', () => prevOverlay.remove());
                             document.body.append(prevOverlay);
-                            currentPreviewOverlay = prevOverlay;
-                        };
+                        });
                     });
 
-                    // 删除按钮
-                    overlay.querySelectorAll('.media-delete-btn').forEach(btn => {
-                        btn.onclick = async (e) => {
-                            e.stopPropagation();
-                            const name = btn.dataset.name;
-                            const imgurl = btn.dataset.imgurl;
-                            const filename = imgurl.split('/').pop();
-                            const confirmOverlay = document.createElement('div');
-                            confirmOverlay.className = 'modal-overlay';
-                            confirmOverlay.style.zIndex = '10001';
-                            confirmOverlay.innerHTML = '<div class="modal-box" style="width:380px;text-align:center;">' +
-                                '<h3 style="color:#ff5050;margin-bottom:12px;">⚠️ 确认删除</h3>' +
-                                '<p style="color:#ccc;font-size:13px;margin-bottom:6px;">确定要删除以下图片吗？</p>' +
-                                '<img src="' + imgurl + '" style="max-width:200px;max-height:120px;object-fit:contain;margin-bottom:8px;border-radius:4px;">' +
-                                '<p style="color:#e0e0e0;font-size:12px;word-break:break-all;margin-bottom:16px;background:rgba(0,0,0,0.3);padding:8px;border-radius:4px;">' + name + '</p>' +
-                                '<p style="color:#888;font-size:11px;margin-bottom:16px;">此操作不可撤销</p>' +
-                                '<div style="display:flex;gap:10px;justify-content:center;">' +
-                                '<button class="btn" id="delCancel">取消</button>' +
-                                '<button class="btn" id="delConfirm" style="background:rgba(255,80,80,0.2);color:#ff5050;border-color:rgba(255,80,80,0.4);">确认删除</button>' +
-                                '</div></div>';
-                            document.body.append(confirmOverlay);
-                            confirmOverlay.addEventListener('click', e2 => { if (e2.target === confirmOverlay) confirmOverlay.remove(); });
-                            confirmOverlay.querySelector('#delCancel').onclick = () => confirmOverlay.remove();
-                            confirmOverlay.querySelector('#delConfirm').onclick = async () => {
-                                confirmOverlay.querySelector('#delConfirm').textContent = '⏳ 删除中...';
-                                confirmOverlay.querySelector('#delConfirm').disabled = true;
-                                try {
-                                    const resp = await authFetch('/changbai/api/admin/media/' + filename, { method: 'DELETE' });
-                                    if (resp.ok) {
-                                        showToast('✅ 已删除: ' + name);
-                                        confirmOverlay.remove();
-                                        const itemEl = overlay.querySelector('.media-img-item[data-idx="' + btn.dataset.idx + '"]');
-                                        if (itemEl) {
-                                            itemEl.style.transition = 'opacity 0.3s';
-                                            itemEl.style.opacity = '0';
-                                            setTimeout(() => itemEl.remove(), 300);
-                                        }
-                                        const selVal = document.getElementById('selectedMedia_val');
-                                        if (selVal && selVal.value === btoa(imgurl)) {
-                                            selVal.value = '';
-                                        }
-                                    } else {
-                                        showToast('❌ 删除失败', true);
-                                    }
-                                } catch(err) {
-                                    showToast('❌ 删除失败: ' + err.message, true);
-                                }
-                            };
-                        };
-                    });
-
+                    // 选取按钮
                     overlay.querySelector('#btnPickMedia').onclick = () => {
-                        const sel = document.getElementById('selectedMedia_val').value;
+                        const sel = selInput.value;
                         if (!sel) { showToast('请先选择图片', true); return; }
                         const path = atob(sel);
                         item[key] = path;
@@ -856,6 +791,57 @@
                         preview.src = path;
                         preview.style.display = '';
                         overlay.remove();
+                    };
+
+                    // 删除按钮
+                    delBtn.onclick = async () => {
+                        const sel = selInput.value;
+                        const name = nameInput.value;
+                        if (!sel) { showToast('请先选择图片', true); return; }
+                        const imgurl = atob(sel);
+                        const filename = imgurl.split('/').pop();
+                        const confirmOverlay = document.createElement('div');
+                        confirmOverlay.className = 'modal-overlay';
+                        confirmOverlay.style.zIndex = '10001';
+                        confirmOverlay.innerHTML = '<div class="modal-box" style="width:380px;text-align:center;">' +
+                            '<h3 style="color:#ff5050;margin-bottom:12px;">⚠️ 确认删除</h3>' +
+                            '<p style="color:#ccc;font-size:13px;margin-bottom:6px;">确定要删除以下图片吗？</p>' +
+                            '<img src="' + imgurl + '" style="max-width:200px;max-height:120px;object-fit:contain;margin-bottom:8px;border-radius:4px;">' +
+                            '<p style="color:#e0e0e0;font-size:12px;word-break:break-all;margin-bottom:16px;background:rgba(0,0,0,0.3);padding:8px;border-radius:4px;">' + name + '</p>' +
+                            '<p style="color:#888;font-size:11px;margin-bottom:16px;">此操作不可撤销</p>' +
+                            '<div style="display:flex;gap:10px;justify-content:center;">' +
+                            '<button class="btn" id="delCancel2">取消</button>' +
+                            '<button class="btn" id="delConfirm2" style="background:rgba(255,80,80,0.2);color:#ff5050;border-color:rgba(255,80,80,0.4);">确认删除</button>' +
+                            '</div></div>';
+                        document.body.append(confirmOverlay);
+                        confirmOverlay.addEventListener('click', e2 => { if (e2.target === confirmOverlay) confirmOverlay.remove(); });
+                        confirmOverlay.querySelector('#delCancel2').onclick = () => confirmOverlay.remove();
+                        confirmOverlay.querySelector('#delConfirm2').onclick = async () => {
+                            confirmOverlay.querySelector('#delConfirm2').textContent = '⏳ 删除中...';
+                            confirmOverlay.querySelector('#delConfirm2').disabled = true;
+                            try {
+                                const resp = await authFetch('/changbai/api/admin/media/' + filename, { method: 'DELETE' });
+                                if (resp.ok) {
+                                    showToast('✅ 已删除: ' + name);
+                                    confirmOverlay.remove();
+                                    // 从弹窗中移除该条目
+                                    const itemEl = overlay.querySelector('.media-img-item[data-url="' + imgurl + '"]');
+                                    if (itemEl) {
+                                        itemEl.style.transition = 'opacity 0.3s';
+                                        itemEl.style.opacity = '0';
+                                        setTimeout(() => itemEl.remove(), 300);
+                                    }
+                                    selInput.value = '';
+                                    nameInput.value = '';
+                                    delBtn.disabled = true;
+                                    delBtn.style.opacity = '0.5';
+                                } else {
+                                    showToast('❌ 删除失败', true);
+                                }
+                            } catch(err) {
+                                showToast('❌ 删除失败: ' + err.message, true);
+                            }
+                        };
                     };
                 } catch(err) { showToast('❌ 加载失败', true); }
             };
