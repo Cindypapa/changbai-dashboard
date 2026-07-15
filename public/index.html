@@ -1899,15 +1899,27 @@ function renderGovernance(d) {
 
     // 矛盾纠纷图表
     if (d.dispute_chart) {
+        let labels, datasets;
+        if (d.dispute_chart.rows) {
+            // 新格式：直观表格配置（行=纠纷类别，列=统计指标）
+            const cols = d.dispute_chart.dataset_labels || Object.keys(d.dispute_chart.rows[0] || {}).filter(k => k !== 'name');
+            labels = d.dispute_chart.rows.map(r => r.name);
+            const palette = ['rgba(0,212,255,0.6)', 'rgba(0,255,136,0.6)', 'rgba(255,180,0,0.6)', 'rgba(255,100,100,0.6)'];
+            const borders = ['#00d4ff', '#00ff88', '#ffb400', '#ff6464'];
+            datasets = cols.map((col, i) => ({
+                label: col, data: d.dispute_chart.rows.map(r => r[col] || 0),
+                backgroundColor: palette[i % 4], borderColor: borders[i % 4], borderWidth: 1
+            }));
+        } else {
+            // 旧格式兼容
+            labels = d.dispute_chart.labels;
+            datasets = [
+                { label: '本月新增', data: d.dispute_chart.datasets[0].data, backgroundColor: 'rgba(0,212,255,0.6)', borderColor: '#00d4ff', borderWidth: 1 },
+                { label: '已化解', data: d.dispute_chart.datasets[1].data, backgroundColor: 'rgba(0,255,136,0.6)', borderColor: '#00ff88', borderWidth: 1 }
+            ];
+        }
         createChart('disputeChart', {
-            type: 'bar',
-            data: {
-                labels: d.dispute_chart.labels,
-                datasets: [
-                    { label: '本月新增', data: d.dispute_chart.datasets[0].data, backgroundColor: 'rgba(0,212,255,0.6)', borderColor: '#00d4ff', borderWidth: 1 },
-                    { label: '已化解', data: d.dispute_chart.datasets[1].data, backgroundColor: 'rgba(0,255,136,0.6)', borderColor: '#00ff88', borderWidth: 1 }
-                ]
-            },
+            type: 'bar', data: { labels, datasets },
             options: {
                 responsive: true, maintainAspectRatio: false,
                 plugins: { legend: { position: 'bottom' } },

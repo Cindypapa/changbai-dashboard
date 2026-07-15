@@ -938,6 +938,71 @@
             return wrap;
         }
 
+        // ─── 纠纷趋势图表格渲染 ───
+        function renderTable(container, rows, cols, chartObj) {
+            const table = document.createElement('table');
+            table.style.cssText = 'width:100%;border-collapse:collapse;font-size:12px;';
+            const thead = document.createElement('thead');
+            const hRow = document.createElement('tr');
+            hRow.style.cssText = 'background:rgba(0,212,255,0.08);';
+            const hTh = document.createElement('th');
+            hTh.textContent = '纠纷类别';
+            hTh.style.cssText = 'padding:6px 8px;text-align:left;border:1px solid rgba(0,212,255,0.15);color:#00d4ff;';
+            hRow.append(hTh);
+            cols.forEach((cn, ci) => {
+                const th = document.createElement('th');
+                th.style.cssText = 'padding:6px 8px;text-align:center;border:1px solid rgba(0,212,255,0.15);color:#00d4ff;cursor:pointer;';
+                th.title = '双击修改列名';
+                th.textContent = cn;
+                th.ondblclick = () => {
+                    const n = prompt('修改指标名称：', cn);
+                    if (n && n !== cn) {
+                        const old = cols[ci];
+                        cols[ci] = n;
+                        rows.forEach(r => { r[n] = r[old]; delete r[old]; });
+                        renderTable(container, rows, cols, chartObj);
+                    }
+                };
+                hRow.append(th);
+            });
+            thead.append(hRow);
+            table.append(thead);
+            const tbody = document.createElement('tbody');
+            rows.forEach((r, ri) => {
+                const tr = document.createElement('tr');
+                tr.style.cssText = 'background:' + (ri % 2 ? 'rgba(0,212,255,0.03)' : 'transparent') + ';';
+                const nameTd = document.createElement('td');
+                nameTd.style.cssText = 'padding:4px 8px;border:1px solid rgba(0,212,255,0.12);';
+                const nameInp = mkInput('text', r.name || '');
+                nameInp.placeholder = '纠纷类别';
+                nameInp.style.maxWidth = 'none';
+                nameInp.onchange = () => { r.name = nameInp.value; };
+                nameTd.append(nameInp);
+                tr.append(nameTd);
+                cols.forEach(cn => {
+                    const td = document.createElement('td');
+                    td.style.cssText = 'padding:4px 8px;border:1px solid rgba(0,212,255,0.12);';
+                    const inp = mkInput('number', r[cn] || 0);
+                    inp.style.maxWidth = 'none';
+                    inp.onchange = () => { r[cn] = parseFloat(inp.value) || 0; };
+                    td.append(inp);
+                    tr.append(td);
+                });
+                const delTd = document.createElement('td');
+                delTd.style.cssText = 'padding:4px;border:1px solid rgba(0,212,255,0.12);text-align:center;';
+                const delBtn = document.createElement('button');
+                delBtn.className = 'btn-icon danger';
+                delBtn.textContent = '✕';
+                delBtn.onclick = () => { rows.splice(ri, 1); renderTable(container, rows, cols, chartObj); };
+                delTd.append(delBtn);
+                tr.append(delTd);
+                tbody.append(tr);
+            });
+            table.append(tbody);
+            container.innerHTML = '';
+            container.append(table);
+        }
+
         // ─── 监控相机媒体编辑器 ───
 
         // 图片类型：上传 + URL + 预览
@@ -1676,7 +1741,68 @@
                 }
 
                 if (typeof val === 'object' && val !== null) {
-                    if (k.endsWith('_chart') || k === 'datasets' || k === 'pie_charts') {
+                    if (k === 'dispute_chart') {
+                        // 纠纷趋势图专用表格编辑器
+                        const nRows = val.rows || [];
+                        const cols = val.dataset_labels || [];
+                        const card = document.createElement('div');
+                        card.className = 'section-card';
+                        const h3 = document.createElement('h3');
+                        h3.textContent = labelText;
+                        h3.style.cssText = 'font-size:15px;color:#00d4ff;margin:0 0 10px 0;';
+                        card.append(h3);
+                        const tip = document.createElement('div');
+                        tip.style.cssText = 'font-size:11px;color:#8899aa;margin-bottom:8px;';
+                        tip.textContent = '每行一个纠纷类别，每列一个统计指标。双击列名修改指标名。';
+                        card.append(tip);
+                        const tblWrap = document.createElement('div');
+                        tblWrap.style.cssText = 'overflow-x:auto;margin-bottom:8px;';
+                        renderTable(tblWrap, nRows, cols, val);
+                        card.append(tblWrap);
+                        const btnBar = document.createElement('div');
+                        btnBar.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;';
+                        ['+ 添加列', '+ 添加行', '- 删除列'].forEach((label, i) => {
+                            const btn = document.createElement('button');
+                            btn.className = 'btn btn-sm';
+                            if (i === 2) btn.style.cssText = 'background:rgba(255,68,68,0.15);border-color:rgba(255,68,68,0.4);';
+                            btn.textContent = label;
+                            btn.onclick = () => {
+                                if (i === 0) {
+                                    const name = prompt('指标名称：', '新指标');
+                                    if (name) { val.dataset_labels = cols.concat(name); nRows.forEach(r => { r[name] = 0; }); renderTable(tblWrap, nRows, cols, val); }
+                                } else if (i === 1) {
+                                    const obj = { name: '新类别' }; cols.forEach(cn => { obj[cn] = 0; });
+                                    nRows.push(obj); renderTable(tblWrap, nRows, cols, val);
+                                } else {
+                                    if (cols.length <= 1) return alert('至少保留一列');
+                                    const last = cols.pop();
+                                    nRows.forEach(r => { delete r[last]; });
+                                    renderTable(tblWrap, nRows, cols, val);
+                                }
+                            };
+                            btnBar.append(btn);
+                        });
+                        card.append(btnBar);
+                        const saveBtn = document.createElement('button');
+                        saveBtn.className = 'section-save-btn';
+                        saveBtn.style.cssText = 'position:static;margin-top:10px;';
+                        saveBtn.textContent = '💾 保存';
+                        saveBtn.onclick = async function() {
+                            saveBtn.textContent = '⏳ 保存中...';
+                            saveBtn.disabled = true;
+                            const ok = await saveSection(currentPage, currentData);
+                            if (ok) {
+                                saveBtn.textContent = '✅ 已保存';
+                                showToast('✅ ' + labelText + ' 保存成功');
+                            } else {
+                                saveBtn.textContent = '💾 保存';
+                                showToast('❌ 保存失败', true);
+                            }
+                            setTimeout(() => { saveBtn.textContent = '💾 保存'; saveBtn.disabled = false; saveBtn.style.background = ''; }, 2000);
+                        };
+                        card.append(saveBtn);
+                        container.append(card);
+                    } else if (k.endsWith('_chart') || k === 'datasets' || k === 'pie_charts') {
                         const card = buildCard(labelText, k, c => {
                             Object.keys(val).forEach(subK => {
                                 const subVal = val[subK];
