@@ -1528,7 +1528,11 @@
                                     const subVal = item[subK];
                                     const subLbl = document.createElement('label');
                                     subLbl.style.cssText = 'font-size:11px;color:#888;display:block;margin-bottom:2px;';
-                                    subLbl.textContent = zhFieldName(subK);
+                                    if (k === 'key_people' && subK === 'count') {
+                                        subLbl.textContent = '管控等级';
+                                    } else {
+                                        subLbl.textContent = zhFieldName(subK);
+                                    }
                                     fields.append(subLbl);
                                     const fRow = document.createElement('div');
                                     fRow.style.cssText = 'display:flex;gap:6px;margin-bottom:6px;';
