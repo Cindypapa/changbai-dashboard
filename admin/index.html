@@ -1553,7 +1553,13 @@
                                         sel.onchange = () => { item[subK] = sel.value; renderItems(); };
                                         fRow.append(sel);
                                     } else if (subK === 'status') {
-                                        const sel = mkSelect([['online','在线'],['offline','离线'],['alert','告警'],['connecting','接入中'],['warning','预警'],['待命','待命'],['处理中','处理中'],['待处理','待处理'],['已处置','已处置']], subVal);
+                                        let statusOptions;
+                                        if (k === 'dispute_table') {
+                                            statusOptions = [['已化解','已化解'],['调解中','调解中'],['待调解','待调解'],['处理中','处理中']];
+                                        } else {
+                                            statusOptions = [['online','在线'],['offline','离线'],['alert','告警'],['connecting','接入中'],['warning','预警'],['待命','待命'],['处理中','处理中'],['待处理','待处理'],['已处置','已处置']];
+                                        }
+                                        const sel = mkSelect(statusOptions, subVal);
                                         sel.onchange = () => { item[subK] = sel.value; };
                                         fRow.append(sel);
                                     } else if (subK === 'type') {
@@ -1561,6 +1567,8 @@
                                         let typeOptions;
                                         if (k === 'key_people') {
                                             typeOptions = [['社区矫正人员','社区矫正人员'],['精神障碍患者','精神障碍患者'],['刑满释放人员','刑满释放人员'],['吸毒人员','吸毒人员'],['重点信访人员','重点信访人员'],['其他高危人员','其他高危人员']];
+                                        } else if (k === 'dispute_table') {
+                                            typeOptions = [['邻里纠纷','邻里纠纷'],['物业纠纷','物业纠纷'],['劳资纠纷','劳资纠纷'],['家庭纠纷','家庭纠纷'],['信访投诉','信访投诉'],['其他纠纷','其他纠纷']];
                                         } else {
                                             typeOptions = [['alert','告警'],['warning','预警'],['normal','正常'],['command','指挥中心'],['resource','资源'],['info','信息'],['event','事件']];
                                         }
