@@ -981,9 +981,10 @@
                 tr.append(nameTd);
                 cols.forEach(cn => {
                     const td = document.createElement('td');
-                    td.style.cssText = 'padding:4px 8px;border:1px solid rgba(0,212,255,0.12);';
+                    td.style.cssText = 'padding:4px 4px;border:1px solid rgba(0,212,255,0.12);width:80px;';
                     const inp = mkInput('number', r[cn] || 0);
                     inp.style.maxWidth = 'none';
+                    inp.style.padding = '6px 4px';
                     inp.onchange = () => { r[cn] = parseFloat(inp.value) || 0; };
                     td.append(inp);
                     tr.append(td);
