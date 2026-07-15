@@ -990,14 +990,6 @@
                     td.append(inp);
                     tr.append(td);
                 });
-                const delTd = document.createElement('td');
-                delTd.style.cssText = 'padding:4px;border:1px solid rgba(0,212,255,0.12);text-align:center;';
-                const delBtn = document.createElement('button');
-                delBtn.className = 'btn-icon danger';
-                delBtn.textContent = '✕';
-                delBtn.onclick = () => { rows.splice(ri, 1); renderTable(container, rows, cols, chartObj); };
-                delTd.append(delBtn);
-                tr.append(delTd);
                 tbody.append(tr);
             });
             table.append(tbody);
@@ -1763,10 +1755,10 @@
                         card.append(tblWrap);
                         const btnBar = document.createElement('div');
                         btnBar.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;';
-                        ['+ 添加列', '+ 添加行', '- 删除列'].forEach((label, i) => {
+                        ['+ 添加列', '+ 添加行', '- 删除列', '- 删除行'].forEach((label, i) => {
                             const btn = document.createElement('button');
                             btn.className = 'btn btn-sm';
-                            if (i === 2) btn.style.cssText = 'background:rgba(255,68,68,0.15);border-color:rgba(255,68,68,0.4);';
+                            if (i >= 2) btn.style.cssText = 'background:rgba(255,68,68,0.15);border-color:rgba(255,68,68,0.4);';
                             btn.textContent = label;
                             btn.onclick = () => {
                                 if (i === 0) {
@@ -1775,11 +1767,14 @@
                                 } else if (i === 1) {
                                     const obj = { name: '新类别' }; cols.forEach(cn => { obj[cn] = 0; });
                                     nRows.push(obj); renderTable(tblWrap, nRows, cols, val);
-                                } else {
+                                } else if (i === 2) {
                                     if (cols.length <= 1) return alert('至少保留一列');
                                     const last = cols.pop();
                                     nRows.forEach(r => { delete r[last]; });
                                     renderTable(tblWrap, nRows, cols, val);
+                                } else {
+                                    if (nRows.length <= 1) return alert('至少保留一行');
+                                    nRows.pop(); renderTable(tblWrap, nRows, cols, val);
                                 }
                             };
                             btnBar.append(btn);
