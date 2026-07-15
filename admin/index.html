@@ -895,7 +895,7 @@
             const inp = document.createElement('input');
             inp.type = type;
             inp.value = value !== null && value !== undefined ? String(value) : '';
-            inp.style.cssText = 'padding:6px 10px;background:rgba(0,40,80,0.5);border:1px solid rgba(0,212,255,0.3);border-radius:4px;color:#fff;font-size:12px;flex:1;min-width:0;max-width:400px;';
+            inp.style.cssText = 'padding:6px 10px;background:rgba(0,40,80,0.5);border:1px solid rgba(0,212,255,0.3);border-radius:4px;color:#fff;font-size:12px;min-width:0;width:320px;';
             inp.addEventListener('focus', () => { inp.style.borderColor = '#00d4ff'; inp.style.boxShadow = '0 0 6px rgba(0,212,255,0.3)'; });
             inp.addEventListener('blur', () => { inp.style.borderColor = 'rgba(0,212,255,0.3)'; inp.style.boxShadow = 'none'; });
             return inp;
@@ -903,7 +903,7 @@
 
         function mkSelect(optionsKV, value) {
             const sel = document.createElement('select');
-            sel.style.cssText = 'padding:6px 10px;background:rgba(0,40,80,0.5);border:1px solid rgba(0,212,255,0.3);border-radius:4px;color:#fff;font-size:12px;flex:1;min-width:0;max-width:400px;';
+            sel.style.cssText = 'padding:6px 10px;background:rgba(0,40,80,0.5);border:1px solid rgba(0,212,255,0.3);border-radius:4px;color:#fff;font-size:12px;min-width:0;width:320px;';
             optionsKV.forEach(([k, v]) => {
                 const opt = document.createElement('option');
                 opt.value = k; opt.textContent = v;
@@ -915,7 +915,7 @@
 
         function mkColorPicker(initial) {
             const wrap = document.createElement('div');
-            wrap.style.cssText = 'flex:1;max-width:400px;';
+            wrap.style.cssText = 'width:320px;';
             const row = document.createElement('div');
             row.style.cssText = 'display:flex;gap:6px;align-items:center;';
             const swatch = document.createElement('span');
@@ -1466,7 +1466,8 @@
                 label.textContent = f.label + '：';
                 const inp = mkInput(f.type || 'text', item[f.key]);
                 inp.placeholder = f.placeholder;
-                inp.style.cssText = 'padding:6px 10px;background:rgba(0,40,80,0.5);border:1px solid rgba(0,212,255,0.3);border-radius:4px;color:#fff;font-size:12px;flex:1;min-width:0;max-width:320px;';
+                inp.style.cssText = 'padding:6px 10px;background:rgba(0,40,80,0.5);border:1px solid rgba(0,212,255,0.3);border-radius:4px;color:#fff;font-size:12px;min-width:0;max-width:320px;';
+                inp.style.width = '320px';
                 inp.addEventListener('focus', () => { inp.style.borderColor = '#00d4ff'; inp.style.boxShadow = '0 0 6px rgba(0,212,255,0.3)'; });
                 inp.addEventListener('blur', () => { inp.style.borderColor = 'rgba(0,212,255,0.3)'; inp.style.boxShadow = 'none'; });
                 inp.onchange = () => { item[f.key] = inp.value; };
