@@ -972,10 +972,11 @@
                 const tr = document.createElement('tr');
                 tr.style.cssText = 'background:' + (ri % 2 ? 'rgba(0,212,255,0.03)' : 'transparent') + ';';
                 const nameTd = document.createElement('td');
-                nameTd.style.cssText = 'padding:4px 8px;border:1px solid rgba(0,212,255,0.12);';
+                nameTd.style.cssText = 'padding:4px 4px;border:1px solid rgba(0,212,255,0.12);width:80px;';
                 const nameInp = mkInput('text', r.name || '');
                 nameInp.placeholder = '纠纷类别';
                 nameInp.style.maxWidth = 'none';
+                nameInp.style.padding = '6px 4px';
                 nameInp.onchange = () => { r.name = nameInp.value; };
                 nameTd.append(nameInp);
                 tr.append(nameTd);
