@@ -1708,12 +1708,22 @@ function renderOverview(d) {
 
     // 治安指数图表
     if (d.security_index_chart) {
+        let labels, chartData;
+        if (d.security_index_chart.rows) {
+            // 新格式：直观表格配置
+            labels = d.security_index_chart.rows.map(r => r.name);
+            chartData = d.security_index_chart.rows.map(r => r.value || 0);
+        } else {
+            // 旧格式兼容
+            labels = d.security_index_chart.labels;
+            chartData = d.security_index_chart.data;
+        }
         createChart('securityIndexChart', {
             type: 'line',
             data: {
-                labels: d.security_index_chart.labels,
+                labels,
                 datasets: [{
-                    label: '治安指数', data: d.security_index_chart.data,
+                    label: '治安指数', data: chartData,
                     borderColor: '#00d4ff', backgroundColor: 'rgba(0, 212, 255, 0.1)',
                     fill: true, tension: 0.4
                 }]
