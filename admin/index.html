@@ -792,7 +792,7 @@
             'key_people': '重点人员',
             'workflow': '工作流程',
             'grid_distribution': '网格分布',
-            'governance_resources': '治理资源',
+            'governance_resources': '综治力量配置',
             'dispute_table': '纠纷列表',
             'dispute_chart': '纠纷趋势图',
             'scores': '评分指标',
@@ -1575,6 +1575,46 @@
                                         const sel = mkSelect([['true','是'],['false','否']], subVal);
                                         sel.onchange = () => { item[subK] = sel.value === 'true'; };
                                         fRow.append(sel);
+                                    } else if (subK === 'stats') {
+                                        const statsWrap = document.createElement('div');
+                                        statsWrap.style.cssText = 'width:100%;background:rgba(0,0,0,0.2);border-radius:6px;padding:8px;margin-bottom:4px;';
+                                        const statsList = document.createElement('div');
+                                        const renderStats = () => {
+                                            statsList.innerHTML = '';
+                                            const arr = subVal || [];
+                                            arr.forEach((s, si) => {
+                                                const sRow = document.createElement('div');
+                                                sRow.style.cssText = 'display:flex;gap:6px;align-items:center;margin-bottom:4px;';
+                                                const lblInp = mkInput('text', s.label || '');
+                                                lblInp.placeholder = '指标名称';
+                                                lblInp.style.cssText = 'flex:1;';
+                                                lblInp.onchange = () => { s.label = lblInp.value; };
+                                                const valInp = mkInput('text', s.value || '');
+                                                valInp.placeholder = '数值';
+                                                valInp.style.cssText = 'flex:1;';
+                                                valInp.onchange = () => { s.value = valInp.value; };
+                                                const cp = mkColorPicker(s.color || '');
+                                                cp.querySelector('input').oninput = () => { s.color = cp.getColor(); };
+                                                const delBtn = document.createElement('button');
+                                                delBtn.className = 'btn-icon danger';
+                                                delBtn.textContent = '✕';
+                                                delBtn.onclick = () => { arr.splice(si, 1); renderStats(); };
+                                                sRow.append(lblInp, valInp, cp, delBtn);
+                                                statsList.append(sRow);
+                                            });
+                                        };
+                                        renderStats();
+                                        statsWrap.append(statsList);
+                                        const addStatBtn = document.createElement('button');
+                                        addStatBtn.className = 'btn btn-sm';
+                                        addStatBtn.textContent = '+ 添加指标';
+                                        addStatBtn.onclick = () => {
+                                            if (!item.stats) item.stats = [];
+                                            item.stats.push({ label: '', value: '', color: '' });
+                                            renderStats();
+                                        };
+                                        statsWrap.append(addStatBtn);
+                                        fRow.append(statsWrap);
                                     } else if (subK === 'img' && k === 'cameras') {
                                         // 根据 media_type 动态显示不同的操作界面
                                         const mt = item.media_type || 'image';
