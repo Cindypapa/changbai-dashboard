@@ -2218,6 +2218,8 @@ function updateRealtimeData() {
     }
 }
 setInterval(updateRealtimeData, 5000);
+// 定时刷新数据，管理后台保存后自动同步（30秒）
+setInterval(loadAllData, 30000);
 
 // ─── 启动：加载数据并渲染 ───
 Chart.defaults.color = '#b0b8c4';
