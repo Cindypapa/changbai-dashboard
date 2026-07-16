@@ -63,9 +63,9 @@
       "color": "var(--accent-green)"
     },
     {
-      "icon": "📹",
+      "icon": "☎️",
       "count": 14,
-      "label": "离线",
+      "label": "在线",
       "color": "var(--accent-red)"
     },
     {
@@ -122,7 +122,6 @@
       "lng": 121.53
     }
   ],
-  "map_image": "/changbai/uploads/changbai_map_1783664010.png",
   "security_overview": [
     {
       "icon": "🚗",
@@ -149,14 +148,14 @@
     {
       "type": "alert",
       "icon": "🚨",
-      "title": "长白三社区 - 异常人员闯入告警",
+      "title": "安图新村 - 异常人员闯入告警",
       "time": "2026-03-18 14:28",
       "status": "待处理"
     },
     {
       "type": "warning",
       "icon": "⚠️",
-      "title": "长白五社区 - 消防通道占用",
+      "title": "松花新村 - 消防通道占用",
       "time": "2026-03-18 14:25",
       "status": "处理中"
     },
@@ -165,45 +164,64 @@
       "icon": "📋",
       "title": "网格员上报 - 设施损坏",
       "time": "2026-03-18 14:20",
-      "status": "已处理"
+      "status": "已处置"
     },
     {
       "type": "normal",
       "icon": "✅",
-      "title": "纠纷调解完成 - 长白二社区",
+      "title": "纠纷调解完成 - 长白新城",
       "time": "2026-03-18 14:15",
-      "status": "已完成"
+      "status": "已处置"
     },
     {
       "type": "normal",
       "icon": "📞",
       "title": "12345热线 - 噪音投诉",
       "time": "2026-03-18 14:10",
-      "status": "派单中"
+      "status": "处理中"
+    },
+    {
+      "type": "",
+      "icon": "👮‍♀️",
+      "title": "上访人员接访 - 综治中心",
+      "time": "2026-5-15",
+      "status": "已处置"
     }
   ],
   "security_index_chart": {
-    "labels": [
-      "长白一",
-      "长白二",
-      "长白三",
-      "长白四",
-      "长白五",
-      "长白六"
+    "rows": [
+      {
+        "name": "安图新村",
+        "value": 92
+      },
+      {
+        "name": "长白新城",
+        "value": 88
+      },
+      {
+        "name": "松花新村",
+        "value": 85
+      },
+      {
+        "name": "广远新村",
+        "value": 90
+      },
+      {
+        "name": "控江路18弄",
+        "value": 87
+      },
+      {
+        "name": "松花江路95弄",
+        "value": 93
+      }
     ],
-    "data": [
-      92,
-      88,
-      85,
-      90,
-      87,
-      93
-    ]
+    "dataset_label": "治安指数"
   },
   "map_center": [
     31.29,
     121.535
   ],
   "map_zoom": 15,
-  "map_type": "leaflet"
+  "map_type": "leaflet",
+  "map_image": "/changbai/uploads/changbai_map_1783664010.png"
 }

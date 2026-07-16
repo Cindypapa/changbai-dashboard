@@ -1647,11 +1647,8 @@ function renderOverview(d) {
         if (mapEl && mapEl.offsetParent !== null) {
             // 确保容器有高度
             const parentHeight = mapEl.parentElement.clientHeight;
-            if (parentHeight > 0) {
-                mapEl.style.height = parentHeight + 'px';
-            } else {
-                mapEl.style.height = '400px';
-            }
+            let mapHeight = parentHeight > 0 ? parentHeight : 400;
+            mapEl.style.height = mapHeight + 'px';
             const center = d.map_center || [31.29, 121.535];
             window._overviewMap = L.map('overviewMap', {
                 center: center,
@@ -1659,10 +1656,40 @@ function renderOverview(d) {
                 zoomControl: true,
                 attributionControl: false
             });
-            L.tileLayer('https://webrd01.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', {
+            var tileLayer = L.tileLayer('https://webrd01.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', {
                 maxZoom: 18
             }).addTo(window._overviewMap);
             setTimeout(function() { window._overviewMap.invalidateSize(); }, 200);
+
+            // 高德地图瓦片加载失败 → 降级为静态图片
+            var tileFailed = false;
+            var fallbackImg = d.map_image || null;
+            tileLayer.on('tileerror', function() {
+                if (tileFailed) return;
+                tileFailed = true;
+                // 隐藏 Leaflet 地图
+                mapEl.style.display = 'none';
+                // 插入静态图片
+                var mapParent = mapEl.parentElement;
+                var imgDiv = document.createElement('div');
+                imgDiv.className = 'map-with-image';
+                imgDiv.id = 'overviewMapFallback';
+                imgDiv.style.cssText = 'width:100%;height:' + mapHeight + 'px;border-radius:10px;overflow:hidden;position:relative;border:1px solid rgba(0,212,255,0.2);';
+                var img = document.createElement('img');
+                img.src = fallbackImg || '';
+                img.style.cssText = 'width:100%;height:100%;object-fit:cover;';
+                img.onerror = function() {
+                    // 静态图片也加载失败，显示占位提示
+                    imgDiv.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:rgba(0,212,255,0.4);font-size:14px;background:rgba(0,20,40,0.8);">⚠️ 地图加载失败，暂无可用的静态底图</div>';
+                };
+                imgDiv.appendChild(img);
+                // 静态图片降级标注
+                var note = document.createElement('div');
+                note.style.cssText = 'position:absolute;bottom:6px;right:8px;font-size:10px;color:rgba(255,255,255,0.45);background:rgba(0,0,0,0.5);padding:2px 6px;border-radius:3px;pointer-events:none;';
+                note.textContent = '离线地图模式';
+                imgDiv.appendChild(note);
+                mapParent.appendChild(imgDiv);
+            });
 
             // 添加标记
             const markerColors = { alert: '#ff4444', warning: '#ff9900', normal: '#00ff88' };
@@ -2107,11 +2134,8 @@ function renderEmergency(d) {
         const mapEl = document.getElementById('emergencyMap');
         if (mapEl && mapEl.offsetParent !== null) {
             const parentHeight = mapEl.parentElement.clientHeight;
-            if (parentHeight > 0) {
-                mapEl.style.height = parentHeight + 'px';
-            } else {
-                mapEl.style.height = '400px';
-            }
+            let mapHeight = parentHeight > 0 ? parentHeight : 400;
+            mapEl.style.height = mapHeight + 'px';
             const center = d.map_center || [31.29, 121.535];
             window._emergencyMap = L.map('emergencyMap', {
                 center: center,
@@ -2119,10 +2143,36 @@ function renderEmergency(d) {
                 zoomControl: true,
                 attributionControl: false
             });
-            L.tileLayer('https://webrd01.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', {
+            var emTileLayer = L.tileLayer('https://webrd01.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', {
                 maxZoom: 18
             }).addTo(window._emergencyMap);
             setTimeout(function() { window._emergencyMap.invalidateSize(); }, 200);
+
+            // 高德地图瓦片加载失败 → 降级为静态图片
+            var emTileFailed = false;
+            var emFallbackImg = d.map_image || null;
+            emTileLayer.on('tileerror', function() {
+                if (emTileFailed) return;
+                emTileFailed = true;
+                mapEl.style.display = 'none';
+                var mapParent = mapEl.parentElement;
+                var imgDiv = document.createElement('div');
+                imgDiv.className = 'map-with-image';
+                imgDiv.id = 'emergencyMapFallback';
+                imgDiv.style.cssText = 'width:100%;height:' + mapHeight + 'px;border-radius:10px;overflow:hidden;position:relative;border:1px solid rgba(0,212,255,0.2);';
+                var img = document.createElement('img');
+                img.src = emFallbackImg || '';
+                img.style.cssText = 'width:100%;height:100%;object-fit:cover;';
+                img.onerror = function() {
+                    imgDiv.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:rgba(0,212,255,0.4);font-size:14px;background:rgba(0,20,40,0.8);">⚠️ 地图加载失败，暂无可用的静态底图</div>';
+                };
+                imgDiv.appendChild(img);
+                var note = document.createElement('div');
+                note.style.cssText = 'position:absolute;bottom:6px;right:8px;font-size:10px;color:rgba(255,255,255,0.45);background:rgba(0,0,0,0.5);padding:2px 6px;border-radius:3px;pointer-events:none;';
+                note.textContent = '离线地图模式';
+                imgDiv.appendChild(note);
+                mapParent.appendChild(imgDiv);
+            });
 
             d.map_markers.forEach(function(m) {
                 const color = m.color || '#00d4ff';

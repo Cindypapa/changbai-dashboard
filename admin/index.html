@@ -1737,6 +1737,139 @@
                     return;
                 }
 
+                // 地图降级图片：字符串类型，需在 object 分支外独立处理
+                if (k === 'map_image') {
+                    const card = document.createElement('div');
+                    card.className = 'section-card';
+                    const h3 = document.createElement('h3');
+                    h3.textContent = '🗺️ 地图降级图片';
+                    h3.style.cssText = 'font-size:15px;color:#00d4ff;margin:0 0 8px 0;';
+                    card.append(h3);
+                    const note = document.createElement('div');
+                    note.style.cssText = 'font-size:11px;color:#ff9900;margin-bottom:6px;padding:6px 10px;background:rgba(255,153,0,0.1);border-left:3px solid #ff9900;border-radius:4px;';
+                    note.textContent = '⚠️ 此图片仅用于在线地图（高德）无法加载时作为降级备选方案。正常在线时不显示。';
+                    card.append(note);
+                    const previewWrap = document.createElement('div');
+                    previewWrap.style.cssText = 'width:320px;height:180px;margin-bottom:8px;border:1px solid rgba(0,212,255,0.2);border-radius:6px;overflow:hidden;background:rgba(0,20,40,0.6);display:flex;align-items:center;justify-content:center;position:relative;';
+                    const previewImg = document.createElement('img');
+                    previewImg.style.cssText = 'max-width:100%;max-height:100%;object-fit:cover;display:none;';
+                    previewImg.src = (typeof val === 'string' ? val : '') || '';
+                    const placeholder = document.createElement('span');
+                    placeholder.style.cssText = 'color:rgba(0,212,255,0.3);font-size:13px;';
+                    placeholder.textContent = '暂无图片';
+                    if (typeof val === 'string' && val) { previewImg.style.display = 'block'; placeholder.style.display = 'none'; }
+                    previewWrap.append(previewImg, placeholder);
+                    card.append(previewWrap);
+                    const urlRow = mkRow('图片路径');
+                    const urlInp = mkInput('text', (typeof val === 'string' ? val : ''));
+                    urlInp.style.maxWidth = '320px';
+                    urlInp.placeholder = '/changbai/uploads/map.png 或刷新预览';
+                    urlInp.onchange = () => {
+                        obj[k] = urlInp.value;
+                        if (urlInp.value) { previewImg.src = urlInp.value; previewImg.style.display = 'block'; placeholder.style.display = 'none'; }
+                        else { previewImg.style.display = 'none'; placeholder.style.display = ''; }
+                    };
+                    urlRow.append(urlInp);
+                    const refreshBtn = document.createElement('button');
+                    refreshBtn.className = 'btn btn-sm';
+                    refreshBtn.textContent = '🔄';
+                    refreshBtn.title = '刷新预览';
+                    refreshBtn.onclick = () => {
+                        const v = urlInp.value || (typeof val === 'string' ? val : '') || '';
+                        if (v) { previewImg.src = v + '?t=' + Date.now(); previewImg.style.display = 'block'; placeholder.style.display = 'none'; }
+                    };
+                    refreshBtn.style.cssText = 'margin-left:4px;padding:4px 8px;';
+                    urlRow.append(refreshBtn);
+                    card.append(urlRow);
+                    const uploadRow = document.createElement('div');
+                    uploadRow.style.cssText = 'display:flex;gap:6px;align-items:center;margin-bottom:6px;';
+                    const uploadLabel = document.createElement('label');
+                    uploadLabel.className = 'btn btn-sm';
+                    uploadLabel.style.cssText = 'cursor:pointer;display:inline-block;';
+                    uploadLabel.textContent = '📁 上传图片';
+                    const fileInp = document.createElement('input');
+                    fileInp.type = 'file'; fileInp.accept = 'image/*'; fileInp.style.display = 'none';
+                    fileInp.onchange = async () => {
+                        const file = fileInp.files[0];
+                        if (!file) return;
+                        const fd = new FormData(); fd.append('file', file);
+                        try {
+                            const resp = await authFetch('/changbai/api/admin/upload-media', { method: 'POST', body: fd });
+                            const result = await resp.json();
+                            if (result.success) {
+                                const fullUrl = '/changbai' + result.url;
+                                urlInp.value = fullUrl; obj[k] = fullUrl;
+                                previewImg.src = fullUrl + '?t=' + Date.now();
+                                previewImg.style.display = 'block'; placeholder.style.display = 'none';
+                                showToast('✅ 上传成功');
+                            } else showToast('❌ 上传失败', true);
+                        } catch (e) { showToast('❌ 上传异常', true); }
+                        fileInp.value = '';
+                    };
+                    uploadLabel.append(fileInp);
+                    uploadRow.append(uploadLabel);
+                    const pickBtn = document.createElement('button');
+                    pickBtn.className = 'btn btn-sm';
+                    pickBtn.textContent = '🖼️ 媒体库';
+                    pickBtn.onclick = async () => {
+                        try {
+                            const resp = await authFetch('/changbai/api/admin/media-list?type=image');
+                            const result = await resp.json();
+                            if (!result.success || !result.files.length) { showToast('❌ 暂无媒体文件', true); return; }
+                            const imgFiles = result.files.filter(f => /\.(jpg|jpeg|png|gif|webp)$/i.test(f.name));
+                            if (!imgFiles.length) { showToast('❌ 暂无图片文件', true); return; }
+                            const overlay = document.createElement('div');
+                            overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;';
+                            const panel = document.createElement('div');
+                            panel.style.cssText = 'background:#0d2137;border:1px solid rgba(0,212,255,0.3);border-radius:10px;padding:16px;max-width:560px;max-height:70vh;overflow-y:auto;';
+                            panel.innerHTML = '<h3 style="color:#00d4ff;margin:0 0 10px 0;font-size:14px;">📷 选择图片</h3>';
+                            const grid = document.createElement('div');
+                            grid.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:8px;';
+                            imgFiles.forEach(f => {
+                                const item = document.createElement('div');
+                                item.style.cssText = 'border:2px solid transparent;border-radius:6px;overflow:hidden;cursor:pointer;transition:border 0.2s;background:rgba(0,212,255,0.05);';
+                                item.innerHTML = '<img src="/changbai' + f.url + '" style="width:100%;height:100px;object-fit:cover;display:block;" onerror="this.parentElement.style.display="none""><div style="font-size:10px;color:#8899aa;padding:4px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + f.name + '</div>';
+                                item.onclick = () => {
+                                    const fullUrl = '/changbai' + f.url;
+                                    urlInp.value = fullUrl; obj[k] = fullUrl;
+                                    previewImg.src = fullUrl + '?t=' + Date.now();
+                                    previewImg.style.display = 'block'; placeholder.style.display = 'none';
+                                    panel.parentElement.remove();
+                                    showToast('✅ 已选取');
+                                };
+                                grid.append(item);
+                            });
+                            panel.append(grid);
+                            const closeBtn = document.createElement('button');
+                            closeBtn.className = 'btn btn-sm';
+                            closeBtn.style.cssText = 'margin-top:10px;display:block;width:100%;';
+                            closeBtn.textContent = '取消';
+                            closeBtn.onclick = () => overlay.remove();
+                            panel.append(closeBtn);
+                            overlay.append(panel);
+                            overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+                            document.body.append(overlay);
+                        } catch (e) { showToast('❌ 获取媒体列表失败', true); }
+                    };
+                    uploadRow.append(pickBtn);
+                    card.append(uploadRow);
+                    const mapImgSaveBtn = document.createElement('button');
+                    mapImgSaveBtn.className = 'section-save-btn';
+                    mapImgSaveBtn.style.cssText = 'position:static;margin-top:8px;';
+                    mapImgSaveBtn.textContent = '💾 保存';
+                    mapImgSaveBtn.onclick = async function() {
+                        mapImgSaveBtn.textContent = '⏳ 保存中...';
+                        mapImgSaveBtn.disabled = true;
+                        const ok = await saveSection(currentPage, currentData);
+                        if (ok) { mapImgSaveBtn.textContent = '✅ 已保存'; showToast('✅ 地图降级图片 保存成功'); }
+                        else { mapImgSaveBtn.textContent = '💾 保存'; showToast('❌ 保存失败', true); }
+                        setTimeout(() => { mapImgSaveBtn.textContent = '💾 保存'; mapImgSaveBtn.disabled = false; }, 2000);
+                    };
+                    card.append(mapImgSaveBtn);
+                    container.append(card);
+                    return;
+                }
+
                 if (typeof val === 'object' && val !== null) {
                     if (k === 'dispute_chart') {
                         // 纠纷趋势图专用表格编辑器
