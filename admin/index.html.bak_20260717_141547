@@ -1,0 +1,2252 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>长白综治中心 - 后台管理</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+            background: #0a1628;
+            color: #e0e6ed;
+            display: flex;
+            height: 100vh;
+        }
+
+        .sidebar {
+            width: 240px;
+            background: rgba(0, 26, 51, 0.95);
+            border-right: 1px solid rgba(0, 212, 255, 0.2);
+            padding: 20px 0;
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar-title {
+            padding: 0 20px 20px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #00d4ff;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+            margin-bottom: 10px;
+        }
+        .sidebar-sub {
+            font-size: 11px;
+            color: #666;
+            margin-top: 2px;
+        }
+        .nav-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+            border-left: 3px solid transparent;
+            font-size: 14px;
+            color: #b0b8c4;
+            -webkit-font-smoothing: antialiased;
+        }
+        .nav-item:hover { background: rgba(0, 212, 255, 0.1); color: #fff; }
+        .nav-item:active { transform: scale(0.98); }
+        .nav-item.active { background: rgba(0, 212, 255, 0.15); color: #00d4ff; border-left-color: #00d4ff; }
+
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .topbar {
+            padding: 15px 30px;
+            background: rgba(0, 26, 51, 0.9);
+            border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .topbar h2 { font-size: 16px; color: #00d4ff; }
+        .btn {
+            padding: 8px 20px;
+            border: 1px solid rgba(0, 212, 255, 0.4);
+            background: rgba(0, 212, 255, 0.15);
+            color: #00d4ff;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
+        }
+        .btn:hover { background: rgba(0, 212, 255, 0.3); }
+        .btn:active { transform: scale(0.96); }
+        .btn-primary { background: #00d4ff; color: #001a33; font-weight: bold; border: none; }
+        .btn-primary:hover { background: #00b8e0; box-shadow: 0 0 12px rgba(0, 212, 255, 0.4); }
+        .btn-primary:active { transform: scale(0.96); }
+        .btn-danger { border-color: #ff4444; color: #ff4444; background: rgba(255,68,68,0.1); }
+        .btn-danger:hover { background: rgba(255,68,68,0.3); }
+        .btn-danger:active { transform: scale(0.96); }
+        .btn-sm { padding: 4px 12px; font-size: 12px; }
+
+        /* ─── 用户菜单 ─── */
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            padding: 4px 10px;
+            border-radius: 6px;
+            transition: background 0.2s;
+            position: relative;
+        }
+        .user-info:hover { background: rgba(255,255,255,0.08); }
+        .user-avatar {
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            background: rgba(0, 212, 255, 0.15);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        .user-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .user-name { color: #00d4ff; font-size: 13px; white-space: nowrap; }
+        .user-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 8px;
+            background: #001a33;
+            border: 1px solid rgba(0, 212, 255, 0.25);
+            border-radius: 8px;
+            min-width: 150px;
+            z-index: 100;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+            overflow: hidden;
+        }
+        .user-dropdown.show { display: block; }
+        .user-dropdown button {
+            display: block;
+            width: 100%;
+            padding: 10px 16px;
+            border: none;
+            background: transparent;
+            color: #b0b8c4;
+            cursor: pointer;
+            font-size: 13px;
+            text-align: left;
+            transition: background 0.15s;
+        }
+        .user-dropdown button:hover { background: rgba(255,255,255,0.08); }
+        .user-dropdown button.logout { color: #f87171; }
+        .user-dropdown button.logout:hover { background: rgba(239,68,68,0.1); }
+
+        /* ─── 设置弹窗 ─── */
+        .settings-modal .modal {
+            width: 440px;
+            max-width: 95vw;
+            background: linear-gradient(135deg, #001a33, #0a2a4a);
+        }
+        .settings-modal .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 24px 0;
+        }
+        .settings-modal .modal-header h2 { font-size: 16px; color: #00d4ff; margin: 0; }
+        .settings-modal .modal-close {
+            width: 28px; height: 28px;
+            border: 1px solid rgba(255,255,255,0.15);
+            background: transparent;
+            color: #888;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .settings-modal .modal-close:hover { color: #fff; border-color: rgba(255,255,255,0.3); }
+        .settings-modal .modal-body { padding: 20px 24px; }
+        .settings-modal .avatar-section {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+        .settings-modal .avatar-upload-area {
+            width: 72px; height: 72px;
+            border-radius: 50%;
+            border: 2px dashed rgba(0, 212, 255, 0.35);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            overflow: hidden;
+            transition: border-color 0.2s, transform 0.2s;
+            flex-shrink: 0;
+        }
+        .settings-modal .avatar-upload-area:hover { border-color: rgba(0, 212, 255, 0.7); transform: scale(1.05); }
+        .settings-modal .avatar-upload-area img { width: 100%; height: 100%; object-fit: cover; }
+        .settings-modal .avatar-upload-area .placeholder { font-size: 30px; }
+        .settings-modal .avatar-hint { font-size: 12px; color: #666; }
+        .settings-modal .form-group { display: flex; flex-direction: column; gap: 12px; }
+        .settings-modal .form-row { display: flex; align-items: center; gap: 12px; }
+        .settings-modal .form-row label { width: 80px; color: #888; font-size: 13px; flex-shrink: 0; text-align: right; }
+        .settings-modal .form-row input[type="password"],
+        .settings-modal .form-row input[type="text"] {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            background: rgba(0, 26, 51, 0.8);
+            color: #e0e0e0;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+        .settings-modal .form-row input::placeholder { color: #555; }
+        .settings-modal .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            padding: 16px 24px 20px;
+            border-top: 1px solid rgba(0, 212, 255, 0.1);
+        }
+        .btn-cancel {
+            padding: 8px 18px;
+            border: 1px solid rgba(255,255,255,0.15);
+            background: transparent;
+            color: #888;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        .btn-cancel:hover { color: #fff; border-color: rgba(255,255,255,0.3); }
+        .btn-save {
+            padding: 8px 22px;
+            border: none;
+            background: #00d4ff;
+            color: #001a33;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        .btn-save:hover { background: #00b8e0; }
+
+        @media (max-width: 600px) {
+            .settings-modal .modal { width: 95vw; }
+            .settings-modal .form-row { flex-direction: column; align-items: flex-start; gap: 4px; }
+            .settings-modal .form-row label { text-align: left; }
+        }
+
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 30px;
+        }
+
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 13px; color: #b0b8c4; margin-bottom: 6px; font-weight: bold; }
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%;
+            max-width: 600px;
+            padding: 8px 12px;
+            background: rgba(0, 40, 80, 0.5);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 6px;
+            color: #fff;
+            font-size: 13px;
+            font-family: inherit;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+            outline: none;
+            border-color: #00d4ff;
+            box-shadow: 0 0 8px rgba(0, 212, 255, 0.3);
+        }
+        .form-group textarea { min-height: 80px; resize: vertical; font-family: monospace; }
+
+        .form-row { display: flex; gap: 12px; }
+        .form-row > * { flex: 1; }
+
+        .section-card {
+            background: rgba(0, 40, 80, 0.4);
+            border: 1px solid rgba(0, 212, 255, 0.15);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            width: fit-content;
+            min-width: 360px;
+        }
+        .section-card h3 {
+            font-size: 15px;
+            color: #00d4ff;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.15);
+        }
+
+        .item-list { margin-bottom: 10px; }
+        .item-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            padding: 8px;
+            background: rgba(0, 20, 40, 0.5);
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+        .item-row input { flex: 1; }
+
+        .add-btn {
+            color: #00d4ff;
+            cursor: pointer;
+            font-size: 13px;
+            padding: 6px 12px;
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px dashed rgba(0, 212, 255, 0.3);
+            border-radius: 6px;
+            display: inline-block;
+            margin-top: 8px;
+            transition: transform 0.2s ease, background 0.2s ease;
+        }
+        .add-btn:hover { background: rgba(0, 212, 255, 0.2); }
+        .add-btn:active { transform: scale(0.96); }
+
+        .section-save-btn {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            padding: 6px 16px;
+            background: #00d4ff;
+            color: #001a33;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+        }
+        .section-save-btn:hover { background: #00b8e0; box-shadow: 0 0 12px rgba(0, 212, 255, 0.4); }
+        .section-save-btn:active { transform: scale(0.96); }
+        .section-save-btn.saved { background: #00ff88; }
+        .section-card { position: relative; }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 24px;
+            background: #00ff88;
+            color: #001a33;
+            border-radius: 8px;
+            font-weight: bold;
+            z-index: 9999;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            box-shadow: 0 4px 20px rgba(0,255,136,0.3);
+        }
+        .toast.show { opacity: 1; transform: translateY(0); }
+        .toast.error { background: #ff4444; color: #fff; box-shadow: 0 4px 20px rgba(255,68,68,0.3); }
+
+        .tab-bar { display: flex; gap: 8px; margin-bottom: 16px; }
+        .tab-btn {
+            padding: 8px 16px;
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px;
+            color: #b0b8c4;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .tab-btn:hover, .tab-btn.active { background: rgba(0, 212, 255, 0.15); color: #00d4ff; border-color: #00d4ff; }
+
+        .upload-area {
+            border: 2px dashed rgba(0, 212, 255, 0.3);
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .upload-area:hover { border-color: #00d4ff; background: rgba(0, 212, 255, 0.05); }
+        .upload-area input[type="file"] { display: none; }
+
+        .media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-top: 20px; }
+        .media-card {
+            background: rgba(0, 40, 80, 0.5);
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid rgba(0, 212, 255, 0.15);
+            position: relative;
+        }
+        .media-card img, .media-card video { width: 100%; height: 140px; object-fit: cover; }
+        .media-card .media-name { padding: 10px; font-size: 12px; color: #b0b8c4; }
+        .media-card .media-actions { padding: 0 10px 10px; display: flex; gap: 6px; }
+        .media-card .media-url { font-size: 11px; color: #00d4ff; padding: 0 10px; word-break: break-all; }
+
+        /* ─── 可视化表单新样式 ─── */
+        .kv-row { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; max-width: 700px; }
+        .kv-row label { min-width: 100px; font-size: 12px; color: #b0b8c4; text-align: right; flex-shrink: 0; }
+        .kv-row input, .kv-row select { flex: 1; min-width: 0; }
+        .kv-row .kv-val { flex: 1; min-width: 0; }
+        .color-presets { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
+        .color-dot { width: 20px; height: 20px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: all 0.2s; }
+        .color-dot:hover, .color-dot.active { border-color: #fff; transform: scale(1.2); }
+        .array-section { margin-bottom: 10px; }
+        .array-item { background: rgba(0,20,40,0.5); border: 1px solid rgba(0,212,255,0.1); border-radius: 8px; padding: 12px; margin-bottom: 8px; position: relative; display: flex; flex-wrap: wrap; gap: 8px; }
+        .array-item .item-fields { flex: 1; min-width: 0; }
+        .array-item .item-actions { display: flex; gap: 4px; align-items: flex-start; padding-top: 2px; }
+        .btn-icon { width: 28px; height: 28px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.15); background: rgba(0,40,80,0.5); color: #b0b8c4; cursor: pointer; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; transition: transform 0.15s ease, border-color 0.15s ease, color 0.15s ease; }
+        .btn-icon:hover { border-color: #00d4ff; color: #00d4ff; }
+        .btn-icon:active { transform: scale(0.92); }
+        .btn-icon.danger:hover { border-color: #ff4444; color: #ff4444; }
+        .kv-row .mini-input { width: 60px; flex: none; padding: 6px 8px; background: rgba(0,40,80,0.5); border: 1px solid rgba(0,212,255,0.3); border-radius: 4px; color: #fff; font-size: 12px; text-align: center; }
+        .kv-row .mini-input:focus { border-color: #00d4ff; outline: none; box-shadow: 0 0 6px rgba(0,212,255,0.3); }
+        /* 图片上传控件 */
+        .img-upload-wrap { display: flex; gap: 8px; align-items: flex-start; flex: 1; max-width: 500px; }
+        .img-upload-preview { width: 80px; height: 60px; border-radius: 4px; border: 1px solid rgba(0,212,255,0.2); object-fit: cover; background: rgba(0,0,0,0.3); flex-shrink: 0; }
+        .img-upload-input-group { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+        .img-upload-input-group input { width: 100%; }
+
+        /* 登录页 */
+        #loginOverlay input:focus { outline: none; border-color: #00d4ff !important; box-shadow: 0 0 8px rgba(0,212,255,0.3); }
+
+        /* 用户管理表格 */
+        .user-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .user-table th, .user-table td { padding: 10px 14px; text-align: left; border-bottom: 1px solid rgba(0,212,255,0.1); font-size: 13px; }
+        .user-table th { color: #00d4ff; font-weight: normal; font-size: 12px; }
+        .user-table td .role-badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 11px; }
+        .role-admin { background: rgba(0,212,255,0.2); color: #00d4ff; }
+        .role-editor { background: rgba(0,255,136,0.15); color: #00ff88; }
+
+        /* Modal */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 9998; display: flex; align-items: center; justify-content: center; }
+        .modal-box { background: #0d2137; border: 1px solid rgba(0,212,255,0.2); border-radius: 12px; padding: 28px; width: 400px; max-width: 90vw; }
+        .modal-box h3 { color: #00d4ff; margin-bottom: 18px; }
+        .modal-box input { width: 100%; padding: 10px; margin-bottom: 14px; background: rgba(0,40,80,0.5); border: 1px solid rgba(0,212,255,0.3); border-radius: 6px; color: #fff; font-size: 13px; }
+        .modal-box input:focus { outline: none; border-color: #00d4ff; }
+        .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; }
+    </style>
+</head>
+<body>
+    <!-- 登录遮罩 -->
+    <div id="loginOverlay" style="position:fixed;inset:0;background:rgba(10,22,40,0.98);z-index:10000;display:flex;align-items:center;justify-content:center;">
+        <div style="background:rgba(0,40,80,0.6);border:1px solid rgba(0,212,255,0.2);border-radius:12px;padding:40px;width:380px;text-align:center;">
+            <div style="font-size:28px;color:#00d4ff;margin-bottom:8px;">🛡️ 综治中心管理后台</div>
+            <div style="font-size:13px;color:#666;margin-bottom:24px;">长白新村街道</div>
+            <div style="margin-bottom:16px;text-align:left;"><label style="font-size:12px;color:#b0b8c4;">用户名</label><input id="loginUser" type="text" placeholder="admin" style="width:100%;padding:10px;margin-top:6px;background:rgba(0,40,80,0.5);border:1px solid rgba(0,212,255,0.3);border-radius:6px;color:#fff;font-size:14px;"></div>
+            <div style="margin-bottom:20px;text-align:left;"><label style="font-size:12px;color:#b0b8c4;">密码</label><input id="loginPass" type="password" placeholder="········" style="width:100%;padding:10px;margin-top:6px;background:rgba(0,40,80,0.5);border:1px solid rgba(0,212,255,0.3);border-radius:6px;color:#fff;font-size:14px;"></div>
+            <button id="btnLogin" class="btn btn-primary" style="width:100%;padding:10px;font-size:14px;">🔐 登 录</button>
+            <div id="loginError" style="color:#ff4444;font-size:12px;margin-top:12px;display:none;"></div>
+        </div>
+    </div>
+    <div class="sidebar">
+        <div class="sidebar-title">综治中心管理后台<div class="sidebar-sub">长白新村街道</div></div>
+        <div class="nav-item active" data-page="overview">📊 综合态势</div>
+        <div class="nav-item" data-page="security">📹 安防监控</div>
+        <div class="nav-item" data-page="governance">🏛️ 社会综治</div>
+        <div class="nav-item" data-page="cockpit">🎯 决策驾驶舱</div>
+        <div class="nav-item" data-page="emergency">🚨 应急指挥</div>
+        <div class="nav-item" data-page="data-fusion">🔗 数据融合</div>
+        <div class="nav-item" data-page="media">🖼️ 媒体管理</div>
+        <div style="margin-top: auto; padding: 20px;">
+            <a href="/changbai/" target="_blank" class="btn" style="display:block;text-align:center;">👁️ 预览大屏</a>
+        </div>
+    </div>
+
+    <div class="main">
+        <div class="topbar">
+            <h2 id="pageTitle">综合态势配置</h2>
+            <div style="display:flex;align-items:center;gap:12px;">
+                <div class="user-info" id="user-info" style="display:none;" onclick="toggleUserMenu(event)">
+                    <div class="user-avatar" id="user-avatar"><span>👤</span></div>
+                    <span class="user-name" id="user-name">admin</span>
+                    <span style="font-size:10px;color:#666;">▼</span>
+                    <div class="user-dropdown" id="user-dropdown">
+                        <button onclick="openSettingsModal(event)">⚙️ 账号设置</button>
+                        <button class="logout" onclick="doLogout(event)">🚪 退出登录</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="content" id="contentArea"></div>
+    </div>
+
+    <!-- 账号设置弹窗 -->
+    <div class="modal-overlay settings-modal" id="settings-overlay" style="display:none;">
+        <div class="modal">
+            <div class="modal-header">
+                <span></span>
+                <h2>⚙️ 账号设置</h2>
+                <button class="modal-close" onclick="closeSettingsModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="avatar-section">
+                    <div class="avatar-upload-area" id="settings-avatar-area" onclick="document.getElementById('settings-avatar-upload').click()">
+                        <span class="placeholder">👤</span>
+                    </div>
+                    <span class="avatar-hint">点击更换头像</span>
+                    <input type="file" id="settings-avatar-upload" accept="image/*" style="display:none" onchange="handleAvatarUpload(event)">
+                </div>
+                <div class="form-group">
+                    <div class="form-row">
+                        <label>当前密码</label>
+                        <input type="password" id="settings-current-pass" placeholder="输入当前密码">
+                    </div>
+                    <div class="form-row">
+                        <label>新密码</label>
+                        <input type="password" id="settings-new-pass" placeholder="至少6位字符">
+                    </div>
+                    <div class="form-row">
+                        <label>确认新密码</label>
+                        <input type="password" id="settings-confirm-pass" placeholder="再次输入新密码">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeSettingsModal()">取消</button>
+                <button class="btn-save" onclick="saveSettings()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+
+        // ─── 认证状态 ───
+        let authToken = sessionStorage.getItem('changbai_token') || '';
+        let currentUser = null;
+
+        try { currentUser = JSON.parse(sessionStorage.getItem('changbai_user') || 'null'); } catch(e) {}
+
+        const pageTitles = {
+            'overview': '综合态势配置', 'security': '安防监控配置', 'governance': '社会综治配置',
+            'cockpit': '决策驾驶舱配置', 'emergency': '应急指挥配置', 'data-fusion': '数据融合配置',
+            'media': '媒体文件管理', 'users': '用户管理'
+        };
+
+        let currentPage = 'overview';
+        let currentData = null;
+        const COLOR_PRESETS = [
+            '#00d4ff','#00ff88','#ff9900','#ff4444','#ff66b2','#9966ff',
+            '#00bcd4','#4caf50','#ff9800','#f44336','#e91e63','#9c27b0',
+            '#2196f3','#8bc34a','#ffeb3b','#795548','#607d8b','#ffffff',
+        ];
+
+        function showToast(msg, isError) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.className = 'toast ' + (isError ? 'error' : '') + ' show';
+            setTimeout(() => t.classList.remove('show'), 2500);
+        }
+
+        function authFetch(url, opts = {}) {
+            const headers = { ...opts.headers };
+            if (authToken) headers['Authorization'] = 'Bearer ' + authToken;
+            return fetch(url, { ...opts, headers });
+        }
+
+        // ─── 登录 ───
+        async function doLogin() {
+            const username = document.getElementById('loginUser').value.trim();
+            const password = document.getElementById('loginPass').value.trim();
+            if (!username || !password) return showError('请输入用户名和密码');
+            try {
+                const resp = await fetch('/changbai/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const json = await resp.json();
+                if (json.success) {
+                    authToken = json.token;
+                    currentUser = json.user;
+                    sessionStorage.setItem('changbai_token', authToken);
+                    sessionStorage.setItem('changbai_user', JSON.stringify(currentUser));
+                    document.getElementById('loginOverlay').style.display = 'none';
+                    document.getElementById('loginError').style.display = 'none';
+                    updateUserDisplay();
+                    loadAvatar();
+                    if (currentUser.role !== 'admin') {
+                        // 非管理员隐藏用户管理入口
+                        const userNav = document.querySelector('.nav-item[data-page="users"]');
+                        if (userNav) userNav.style.display = 'none';
+                    }
+                    loadPage('overview');
+                } else {
+                    showError(json.error || '登录失败');
+                }
+            } catch(err) { showError('网络错误: ' + err.message); }
+        }
+
+        function showError(msg) {
+            const el = document.getElementById('loginError');
+            el.textContent = msg;
+            el.style.display = 'block';
+        }
+
+        function doLogout() {
+            authToken = '';
+            currentUser = null;
+            sessionStorage.removeItem('changbai_token');
+            sessionStorage.removeItem('changbai_user');
+            document.getElementById('loginOverlay').style.display = 'flex';
+            document.getElementById('user-info').style.display = 'none';
+            document.getElementById('loginUser').value = '';
+            document.getElementById('loginPass').value = '';
+            document.getElementById('contentArea').innerHTML = '';
+        }
+
+        // 登录按钮
+        document.getElementById('btnLogin').addEventListener('click', doLogin);
+        document.getElementById('loginPass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+        // ─── 用户菜单 ───
+        function updateUserDisplay() {
+            const ui = document.getElementById('user-info');
+            const un = document.getElementById('user-name');
+            if (currentUser) {
+                ui.style.display = 'flex';
+                un.textContent = currentUser.username + (currentUser.role === 'admin' ? ' (管理员)' : '');
+            } else {
+                ui.style.display = 'none';
+            }
+        }
+
+        function toggleUserMenu(e) {
+            if (e) e.stopPropagation();
+            document.getElementById('user-dropdown').classList.toggle('show');
+        }
+        document.addEventListener('click', () => {
+            document.getElementById('user-dropdown').classList.remove('show');
+        });
+
+        // ─── 账号设置弹窗 ───
+        function openSettingsModal(e) {
+            if (e) e.stopPropagation();
+            document.getElementById('user-dropdown').classList.remove('show');
+            document.getElementById('settings-overlay').style.display = 'flex';
+            document.getElementById('settings-current-pass').value = '';
+            document.getElementById('settings-new-pass').value = '';
+            document.getElementById('settings-confirm-pass').value = '';
+            loadAvatar();
+        }
+        function closeSettingsModal() {
+            document.getElementById('settings-overlay').style.display = 'none';
+        }
+
+        async function saveSettings() {
+            const currentPass = document.getElementById('settings-current-pass').value;
+            const newPass = document.getElementById('settings-new-pass').value;
+            const confirmPass = document.getElementById('settings-confirm-pass').value;
+
+            if (newPass || confirmPass) {
+                if (!currentPass) { showToast('请输入当前密码', true); return; }
+                if (newPass !== confirmPass) { showToast('两次输入的新密码不一致', true); return; }
+                if (newPass.length < 6) { showToast('密码至少6位', true); return; }
+
+                // 验证当前密码
+                try {
+                    const res = await authFetch('/changbai/api/auth/login', {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username: currentUser.username, password: currentPass })
+                    });
+                    if (!res.ok) { showToast('当前密码错误', true); return; }
+                } catch(e) { showToast('网络错误', true); return; }
+            }
+
+            const payload = {};
+            if (newPass) payload.password = newPass;
+
+            try {
+                const res = await authFetch('/changbai/api/auth/settings', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('✅ 保存成功', false);
+                    closeSettingsModal();
+                    if (newPass) {
+                        // 用新密码重新登录
+                        try {
+                            const res2 = await authFetch('/changbai/api/auth/login', {
+                                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ username: currentUser.username, password: newPass })
+                            });
+                            const data2 = await res2.json();
+                            if (data2.success && data2.token) {
+                                authToken = data2.token;
+                                sessionStorage.setItem('changbai_token', authToken);
+                            }
+                        } catch(e) {}
+                    }
+                } else {
+                    showToast('❌ ' + (data.error || '保存失败'), true);
+                }
+            } catch(e) { showToast('网络错误', true); }
+        }
+
+        function handleAvatarUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const avatarData = e.target.result;
+                document.getElementById('settings-avatar-area').innerHTML = '<img src="' + avatarData + '">';
+                document.getElementById('user-avatar').innerHTML = '<img src="' + avatarData + '">';
+                try {
+                    await authFetch('/changbai/api/auth/settings', {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ avatar: avatarData })
+                    });
+                } catch(e) {}
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function loadAvatar() {
+            try {
+                const res = await authFetch('/changbai/api/auth/settings');
+                const data = await res.json();
+                if (data.avatar) {
+                    const avatarHtml = '<img src="' + data.avatar + '">';
+                    document.getElementById('settings-avatar-area').innerHTML = avatarHtml;
+                    document.getElementById('user-avatar').innerHTML = avatarHtml;
+                }
+            } catch(e) {}
+        }
+
+        // 设置弹窗点击遮罩关闭
+        document.getElementById('settings-overlay').addEventListener('click', function(e) {
+            if (e.target === this) closeSettingsModal();
+        });
+
+        // ─── 验证 token 有效性 ───
+        async function checkAuth() {
+            if (!authToken) { showLogin(); return false; }
+            try {
+                const resp = await authFetch('/changbai/api/auth/me');
+                if (resp.status === 401) { showLogin(); return false; }
+                const json = await resp.json();
+                if (json.success) {
+                    currentUser = json.user;
+                    updateUserDisplay();
+                    loadAvatar();
+                    if (currentUser.role !== 'admin') {
+                        const userNav = document.querySelector('.nav-item[data-page="users"]');
+                        if (userNav) userNav.style.display = 'none';
+                    }
+                    hideLogin();
+                    return true;
+                }
+            } catch(e) {}
+            showLogin();
+            return false;
+        }
+
+        function showLogin() {
+            document.getElementById('loginOverlay').style.display = 'flex';
+            document.getElementById('contentArea').innerHTML = '';
+        }
+
+        function hideLogin() {
+            document.getElementById('loginOverlay').style.display = 'none';
+        }
+
+        // ─── 导航 ───
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', async () => {
+                document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+                item.classList.add('active');
+                currentPage = item.dataset.page;
+                document.getElementById('pageTitle').textContent = pageTitles[currentPage] || '';
+                await loadPage(currentPage);
+            });
+        });
+
+        async function loadPage(page) {
+            if (page === 'media') { renderMediaPage(); return; }
+            if (page === 'users') { renderUsersPage(); return; }
+            try {
+                const resp = await authFetch('/changbai/api/dashboard/' + page);
+                if (resp.status === 401) { showLogin(); return; }
+                const json = await resp.json();
+                currentData = json.success ? JSON.parse(JSON.stringify(json.data)) : {};
+                renderForm();
+            } catch(err) { showToast('加载失败: ' + err.message, true); }
+        }
+
+        // ─── 字段名 → 中文名映射 ───
+        const FIELD_ZH = {
+            // 一级栏目
+            'stats': '统计指标',
+            'street_info': '街道信息',
+            'device_status': '设备状态',
+            'map_markers': '地图标记',
+            'security_overview': '安全概览',
+            'events': '事件列表',
+            'security_index_chart': '安全指数图表',
+            'alert_chart': '告警趋势图',
+            'face_chart': '人脸识别统计',
+            'cameras': '监控列表',
+            'recent_captures': '抓拍记录',
+            'xueliang_status': '雪亮工程',
+            'device_stats': '设备统计',
+            'business_9x': '9+X业务',
+            'key_people': '重点人员',
+            'workflow': '工作流程',
+            'grid_distribution': '网格分布',
+            'governance_resources': '综治力量配置',
+            'dispute_table': '纠纷列表',
+            'dispute_chart': '纠纷趋势图',
+            'scores': '评分指标',
+            'trend_chart': '趋势图',
+            'population': '人口统计',
+            'pie_charts': '饼图',
+            'radar_chart': '雷达图',
+            'community_rankings': '社区排名',
+            'runtime_metrics': '运行指标',
+            'risk_warnings': '风险预警',
+            'alert_levels': '预警等级',
+            'alert_events': '预警事件',
+            'resources': '应急资源',
+            'dispatch_teams': '调度队伍',
+            'comm_records': '通讯记录',
+            'data_sources': '数据源',
+            'data_gather_chart': '数据采集图',
+            'data_quality_chart': '数据质量图',
+            // 二级字段
+            'value': '数值',
+            'label': '名称',
+            'icon': '图标',
+            'trend_type': '趋势方向',
+            'trend_text': '趋势文字',
+            'animate': '动画效果',
+            'name': '名称',
+            'code': '编码',
+            'details': '详情列表',
+            'count': '数量',
+            'color': '颜色',
+            'status': '状态',
+            'status_color': '状态颜色',
+            'status_text': '状态文本',
+            'type': '类型',
+            'title': '标题',
+            'desc': '描述',
+            'time': '时间',
+            'top': '上边距(%)',
+            'left': '左边距(%)',
+            'lat': '纬度',
+            'lng': '经度',
+            'media_type': '媒体类型',
+            'img': '媒体资源',
+            'id': '编号',
+            'location': '位置',
+            'text': '文本',
+            'level': '等级',
+            'active': '是否激活',
+            'url': '链接',
+            'map_image': '地图图片',
+            'map_center': '地图中心',
+            'map_zoom': '地图缩放',
+            'map_type': '地图类型',
+            'dataset': '数据集',
+            'data': '数据',
+            'labels': '标签列表',
+            'colors': '颜色列表',
+            'datasets': '数据集',
+            'score': '分数',
+            'total': '总数',
+            'online': '在线数',
+            'alert': '告警数',
+            'online_rate': '在线率',
+            'chart_data': '图表数据',
+        };
+
+        function zhFieldName(key) {
+            if (FIELD_ZH[key]) return FIELD_ZH[key];
+            // 兜底：驼峰/下划线转中文
+            return key.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').replace(/^./, c => c.toUpperCase()).trim();
+        }
+
+        // ─── 当前栏目缓存（用于独立保存） ───
+        let currentPageData = null;
+
+        async function saveSection(page, data) {
+            try {
+                const resp = await authFetch('/changbai/api/admin/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ page, data })
+                });
+                if (resp.status === 401) { showLogin(); return false; }
+                const json = await resp.json();
+                return json.success;
+            } catch(err) { return false; }
+        }
+
+        // ─── 输入控件 ───
+        function mkRow(labelText, ...children) {
+            const row = document.createElement('div');
+            row.className = 'kv-row';
+            const lbl = document.createElement('label');
+            lbl.textContent = labelText;
+            row.append(lbl, ...children);
+            return row;
+        }
+
+        function mkInput(type, value) {
+            const inp = document.createElement('input');
+            inp.type = type;
+            inp.value = value !== null && value !== undefined ? String(value) : '';
+            inp.style.cssText = 'padding:6px 10px;background:rgba(0,40,80,0.5);border:1px solid rgba(0,212,255,0.3);border-radius:4px;color:#fff;font-size:12px;min-width:0;width:320px;';
+            inp.addEventListener('focus', () => { inp.style.borderColor = '#00d4ff'; inp.style.boxShadow = '0 0 6px rgba(0,212,255,0.3)'; });
+            inp.addEventListener('blur', () => { inp.style.borderColor = 'rgba(0,212,255,0.3)'; inp.style.boxShadow = 'none'; });
+            return inp;
+        }
+
+        function mkSelect(optionsKV, value) {
+            const sel = document.createElement('select');
+            sel.style.cssText = 'padding:6px 10px;background:rgba(0,40,80,0.5);border:1px solid rgba(0,212,255,0.3);border-radius:4px;color:#fff;font-size:12px;min-width:0;width:320px;';
+            optionsKV.forEach(([k, v]) => {
+                const opt = document.createElement('option');
+                opt.value = k; opt.textContent = v;
+                if (k === String(value)) opt.selected = true;
+                sel.append(opt);
+            });
+            return sel;
+        }
+
+        function mkColorPicker(initial) {
+            const wrap = document.createElement('div');
+            wrap.style.cssText = 'width:320px;';
+            const row = document.createElement('div');
+            row.style.cssText = 'display:flex;gap:6px;align-items:center;';
+            const swatch = document.createElement('span');
+            swatch.style.cssText = 'width:24px;height:24px;border-radius:4px;background:' + (initial || '#ccc') + ';flex-shrink:0;';
+            const inp = mkInput('text', initial);
+            inp.oninput = () => { swatch.style.background = inp.value; };
+            row.append(swatch, inp);
+            wrap.append(row);
+            const presets = document.createElement('div');
+            presets.className = 'color-presets';
+            COLOR_PRESETS.forEach(c => {
+                const dot = document.createElement('span');
+                dot.className = 'color-dot' + (c === initial ? ' active' : '');
+                dot.style.background = c;
+                dot.onclick = () => { inp.value = c; swatch.style.background = c; inp.dispatchEvent(new Event('input')); };
+                presets.append(dot);
+            });
+            wrap.append(presets);
+            wrap.getColor = () => inp.value;
+            return wrap;
+        }
+
+        // ─── 纠纷趋势图表格渲染 ───
+        function renderTable(container, rows, cols, chartObj) {
+            const table = document.createElement('table');
+            table.style.cssText = 'border-collapse:collapse;font-size:12px;';
+            const thead = document.createElement('thead');
+            const hRow = document.createElement('tr');
+            hRow.style.cssText = 'background:rgba(0,212,255,0.08);';
+            const hTh = document.createElement('th');
+            hTh.textContent = '纠纷类别';
+            hTh.style.cssText = 'padding:6px 8px;text-align:left;border:1px solid rgba(0,212,255,0.15);color:#00d4ff;';
+            hRow.append(hTh);
+            cols.forEach((cn, ci) => {
+                const th = document.createElement('th');
+                th.style.cssText = 'padding:6px 8px;text-align:center;border:1px solid rgba(0,212,255,0.15);color:#00d4ff;cursor:pointer;';
+                th.title = '双击修改列名';
+                th.textContent = cn;
+                th.ondblclick = () => {
+                    const n = prompt('修改指标名称：', cn);
+                    if (n && n !== cn) {
+                        const old = cols[ci];
+                        cols[ci] = n;
+                        rows.forEach(r => { r[n] = r[old]; delete r[old]; });
+                        renderTable(container, rows, cols, chartObj);
+                    }
+                };
+                hRow.append(th);
+            });
+            thead.append(hRow);
+            table.append(thead);
+            const tbody = document.createElement('tbody');
+            rows.forEach((r, ri) => {
+                const tr = document.createElement('tr');
+                tr.style.cssText = 'background:' + (ri % 2 ? 'rgba(0,212,255,0.03)' : 'transparent') + ';';
+                const nameTd = document.createElement('td');
+                nameTd.style.cssText = 'padding:4px 4px;border:1px solid rgba(0,212,255,0.12);width:80px;';
+                const nameInp = mkInput('text', r.name || '');
+                nameInp.placeholder = '纠纷类别';
+                nameInp.style.maxWidth = 'none';
+                nameInp.style.padding = '6px 4px';
+                nameInp.onchange = () => { r.name = nameInp.value; };
+                nameTd.append(nameInp);
+                tr.append(nameTd);
+                cols.forEach(cn => {
+                    const td = document.createElement('td');
+                    td.style.cssText = 'padding:4px 4px;border:1px solid rgba(0,212,255,0.12);width:80px;';
+                    const inp = mkInput('number', r[cn] || 0);
+                    inp.style.maxWidth = 'none';
+                    inp.style.padding = '6px 4px';
+                    inp.onchange = () => { r[cn] = parseFloat(inp.value) || 0; };
+                    td.append(inp);
+                    tr.append(td);
+                });
+                tbody.append(tr);
+            });
+            table.append(tbody);
+            container.innerHTML = '';
+            container.append(table);
+        }
+
+        // ─── 监控相机媒体编辑器 ───
+
+        // 图片类型：上传 + URL + 预览
+        function renderImageEditor(fRow, key, value, item) {
+            fRow.style.cssText = 'display:flex;gap:8px;margin-bottom:8px;align-items:flex-start;';
+            const imgWrap = document.createElement('div');
+            imgWrap.className = 'img-upload-wrap';
+            const preview = document.createElement('img');
+            preview.className = 'img-upload-preview';
+            preview.src = value || '';
+            preview.onerror = () => { preview.src = ''; preview.style.display = 'none'; };
+            if (!value) preview.style.display = 'none';
+            imgWrap.append(preview);
+            const inputGroup = document.createElement('div');
+            inputGroup.className = 'img-upload-input-group';
+            const inp = mkInput('text', value);
+            inp.placeholder = '图片路径（可手动输入或上传后自动填入）';
+            inp.onchange = () => {
+                item[key] = inp.value;
+                if (inp.value) { preview.src = inp.value; preview.style.display = ''; }
+                else { preview.style.display = 'none'; }
+            };
+            inputGroup.append(inp);
+            // 上传 + 媒体库按钮
+            const btnRow = document.createElement('div');
+            btnRow.style.cssText = 'display:flex;gap:6px;';
+
+            const uploadBtn = document.createElement('button');
+            uploadBtn.className = 'btn btn-sm';
+            uploadBtn.textContent = '📷 上传图片';
+            uploadBtn.style.cssText = 'font-size:11px;padding:4px 10px;';
+            const fileInp = document.createElement('input');
+            fileInp.type = 'file';
+            fileInp.accept = 'image/*';
+            fileInp.style.display = 'none';
+            uploadBtn.onclick = () => fileInp.click();
+            fileInp.onchange = async () => {
+                const file = fileInp.files[0];
+                if (!file) return;
+                uploadBtn.textContent = '⏳ 上传中...';
+                uploadBtn.disabled = true;
+                try {
+                    const fd = new FormData();
+                    fd.append('file', file);
+                    const resp = await authFetch('/changbai/api/admin/upload-media', { method: 'POST', body: fd });
+                    if (resp.status === 401) { showLogin(); return; }
+                    const json = await resp.json();
+                    if (json.success) {
+                        const localPath = '/changbai' + json.url;
+                        item[key] = localPath;
+                        inp.value = localPath;
+                        preview.src = localPath;
+                        preview.style.display = '';
+                        showToast('✅ 上传成功');
+                    } else {
+                        showToast('❌ 上传失败: ' + json.error, true);
+                    }
+                } catch(err) {
+                    showToast('❌ 上传失败: ' + err.message, true);
+                }
+                uploadBtn.textContent = '📷 上传图片';
+                uploadBtn.disabled = false;
+                fileInp.value = '';
+            };
+
+            const browseBtn = document.createElement('button');
+            browseBtn.className = 'btn btn-sm';
+            browseBtn.textContent = '📁 从媒体库选图';
+            browseBtn.style.cssText = 'font-size:11px;padding:4px 10px;';
+            browseBtn.onclick = async () => {
+                try {
+                    const resp = await authFetch('/changbai/api/admin/media-list');
+                    if (resp.status === 401) { showLogin(); return; }
+                    const json = await resp.json();
+                    if (!json.success || json.files.length === 0) { showToast('媒体库为空', true); return; }
+                    const overlay = document.createElement('div');
+                    overlay.className = 'modal-overlay';
+                    const imgFiles = json.files.filter(f => /\.(jpg|jpeg|png|gif|webp)$/i.test(f.name));
+                    overlay.innerHTML = '<div class="modal-box" style="width:520px;max-height:70vh;overflow-y:auto;"><h3>从媒体库选取图片</h3>' +
+                        '<p style="font-size:11px;color:#666;margin-bottom:10px;">点击缩略图选中 | 双击放大预览</p>' +
+                        '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">' +
+                        imgFiles.map((f, i) => '<div class="media-select-item media-img-item" style="border:2px solid transparent;border-radius:6px;overflow:hidden;transition:border 0.2s;background:rgba(0,212,255,0.05);cursor:pointer;" data-url="/changbai' + f.url + '" data-idx="' + i + '" data-name="' + f.name.replace(/"/g,'&quot;') + '">' +
+                            '<img src="/changbai' + f.url + '" style="width:100%;height:80px;object-fit:cover;pointer-events:none;">' +
+                            '<div style="font-size:10px;padding:4px;color:#aaa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + f.name + '</div>' +
+                            '</div>').join('') +
+                        '</div>' +
+                        '<input type="hidden" id="selectedMedia_val">' +
+                        '<input type="hidden" id="selectedMedia_name">' +
+                        '<div class="modal-actions" style="margin-top:14px;">' +
+                        '<button class="btn" onclick="this.closest(\'.modal-overlay\').remove()">取消</button>' +
+                        '<button class="btn btn-primary" id="btnPickMedia">✅ 选取选中图片</button>' +
+                        '<button class="btn" id="btnDelMedia" style="background:rgba(255,80,80,0.15);color:#ff5050;border-color:rgba(255,80,80,0.3);">🗑 删除选中图片</button>' +
+                        '</div></div>';
+                    document.body.append(overlay);
+                    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+
+                    const selInput = document.getElementById('selectedMedia_val');
+                    const nameInput = document.getElementById('selectedMedia_name');
+                    const delBtn = overlay.querySelector('#btnDelMedia');
+                    delBtn.disabled = true;
+                    delBtn.style.opacity = '0.5';
+
+                    function selectImg(item, url, name) {
+                        selInput.value = btoa(url);
+                        nameInput.value = name;
+                        overlay.querySelectorAll('.media-img-item').forEach(el => el.style.borderColor = 'transparent');
+                        item.style.borderColor = '#00d4ff';
+                        delBtn.disabled = false;
+                        delBtn.style.opacity = '1';
+                    }
+
+                    // 点击缩略图选中，双击预览
+                    overlay.querySelectorAll('.media-img-item').forEach(item => {
+                        item.addEventListener('click', function(e) {
+                            const url = this.dataset.url;
+                            const name = this.dataset.name;
+                            selectImg(this, url, name);
+                        });
+                        item.addEventListener('dblclick', function(e) {
+                            const url = this.dataset.url;
+                            const prevOverlay = document.createElement('div');
+                            prevOverlay.className = 'modal-overlay';
+                            prevOverlay.style.zIndex = '10002';
+                            prevOverlay.style.cursor = 'zoom-out';
+                            prevOverlay.innerHTML = '<div style="position:relative;max-width:90vw;max-height:90vh;">' +
+                                '<img src="' + url + '" style="max-width:90vw;max-height:85vh;object-fit:contain;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,0.6);">' +
+                                '<div style="text-align:center;margin-top:8px;color:#aaa;font-size:12px;">点击任意处关闭</div>' +
+                                '</div>';
+                            prevOverlay.addEventListener('click', () => prevOverlay.remove());
+                            document.body.append(prevOverlay);
+                        });
+                    });
+
+                    // 选取按钮
+                    overlay.querySelector('#btnPickMedia').onclick = () => {
+                        const sel = selInput.value;
+                        if (!sel) { showToast('请先选择图片', true); return; }
+                        const path = atob(sel);
+                        item[key] = path;
+                        inp.value = path;
+                        preview.src = path;
+                        preview.style.display = '';
+                        overlay.remove();
+                    };
+
+                    // 删除按钮
+                    delBtn.onclick = async () => {
+                        const sel = selInput.value;
+                        const name = nameInput.value;
+                        if (!sel) { showToast('请先选择图片', true); return; }
+                        const imgurl = atob(sel);
+                        const filename = imgurl.split('/').pop();
+                        const confirmOverlay = document.createElement('div');
+                        confirmOverlay.className = 'modal-overlay';
+                        confirmOverlay.style.zIndex = '10001';
+                        confirmOverlay.innerHTML = '<div class="modal-box" style="width:380px;text-align:center;">' +
+                            '<h3 style="color:#ff5050;margin-bottom:12px;">⚠️ 确认删除</h3>' +
+                            '<p style="color:#ccc;font-size:13px;margin-bottom:6px;">确定要删除以下图片吗？</p>' +
+                            '<img src="' + imgurl + '" style="max-width:200px;max-height:120px;object-fit:contain;margin-bottom:8px;border-radius:4px;">' +
+                            '<p style="color:#e0e0e0;font-size:12px;word-break:break-all;margin-bottom:16px;background:rgba(0,0,0,0.3);padding:8px;border-radius:4px;">' + name + '</p>' +
+                            '<p style="color:#888;font-size:11px;margin-bottom:16px;">此操作不可撤销</p>' +
+                            '<div style="display:flex;gap:10px;justify-content:center;">' +
+                            '<button class="btn" id="delCancel2">取消</button>' +
+                            '<button class="btn" id="delConfirm2" style="background:rgba(255,80,80,0.2);color:#ff5050;border-color:rgba(255,80,80,0.4);">确认删除</button>' +
+                            '</div></div>';
+                        document.body.append(confirmOverlay);
+                        confirmOverlay.addEventListener('click', e2 => { if (e2.target === confirmOverlay) confirmOverlay.remove(); });
+                        confirmOverlay.querySelector('#delCancel2').onclick = () => confirmOverlay.remove();
+                        confirmOverlay.querySelector('#delConfirm2').onclick = async () => {
+                            confirmOverlay.querySelector('#delConfirm2').textContent = '⏳ 删除中...';
+                            confirmOverlay.querySelector('#delConfirm2').disabled = true;
+                            try {
+                                const resp = await authFetch('/changbai/api/admin/media/' + filename, { method: 'DELETE' });
+                                if (resp.ok) {
+                                    showToast('✅ 已删除: ' + name);
+                                    confirmOverlay.remove();
+                                    // 从弹窗中移除该条目
+                                    const itemEl = overlay.querySelector('.media-img-item[data-url="' + imgurl + '"]');
+                                    if (itemEl) {
+                                        itemEl.style.transition = 'opacity 0.3s';
+                                        itemEl.style.opacity = '0';
+                                        setTimeout(() => itemEl.remove(), 300);
+                                    }
+                                    selInput.value = '';
+                                    nameInput.value = '';
+                                    delBtn.disabled = true;
+                                    delBtn.style.opacity = '0.5';
+                                } else {
+                                    showToast('❌ 删除失败', true);
+                                }
+                            } catch(err) {
+                                showToast('❌ 删除失败: ' + err.message, true);
+                            }
+                        };
+                    };
+                } catch(err) { showToast('❌ 加载失败', true); }
+            };
+            btnRow.append(uploadBtn, browseBtn, fileInp);
+            inputGroup.append(btnRow);
+            imgWrap.append(inputGroup);
+            fRow.append(imgWrap);
+        }
+
+        // 视频类型：上传 + URL + 预览播放
+        function renderVideoEditor(fRow, key, value, item) {
+            fRow.style.cssText = 'display:flex;flex-direction:column;gap:8px;margin-bottom:8px;';
+            const inputGroup = document.createElement('div');
+            inputGroup.style.cssText = 'display:flex;flex-direction:column;gap:6px;width:100%;';
+
+            const inp = mkInput('text', value);
+            inp.placeholder = '视频路径（可手动输入或上传后自动填入）';
+            inp.onchange = () => { item[key] = inp.value; updateVideoPreview(); };
+            inputGroup.append(inp);
+
+            // 视频预览
+            const previewWrap = document.createElement('div');
+            previewWrap.style.cssText = 'width:100%;max-width:400px;';
+            const videoEl = document.createElement('video');
+            videoEl.style.cssText = 'width:100%;max-height:200px;background:#000;border-radius:6px;display:none;';
+            videoEl.controls = true;
+            videoEl.preload = 'metadata';
+            videoEl.onerror = () => { videoEl.style.display = 'none'; };
+            previewWrap.append(videoEl);
+
+            function updateVideoPreview() {
+                const v = item[key];
+                if (v && (v.startsWith('/') || v.startsWith('http'))) {
+                    videoEl.src = v;
+                    videoEl.style.display = '';
+                } else {
+                    videoEl.src = '';
+                    videoEl.style.display = 'none';
+                }
+            }
+            updateVideoPreview();
+
+            // 上传 + 媒体库按钮
+            const btnRow = document.createElement('div');
+            btnRow.style.cssText = 'display:flex;gap:6px;';
+
+            const uploadBtn = document.createElement('button');
+            uploadBtn.className = 'btn btn-sm';
+            uploadBtn.textContent = '🎬 上传视频';
+            uploadBtn.style.cssText = 'font-size:11px;padding:4px 10px;';
+            const fileInp = document.createElement('input');
+            fileInp.type = 'file';
+            fileInp.accept = 'video/*';
+            fileInp.style.display = 'none';
+            uploadBtn.onclick = () => fileInp.click();
+            fileInp.onchange = async () => {
+                const file = fileInp.files[0];
+                if (!file) return;
+                uploadBtn.textContent = '⏳ 上传中...';
+                uploadBtn.disabled = true;
+                try {
+                    const fd = new FormData();
+                    fd.append('file', file);
+                    const resp = await authFetch('/changbai/api/admin/upload-media', { method: 'POST', body: fd });
+                    if (resp.status === 401) { showLogin(); return; }
+                    const json = await resp.json();
+                    if (json.success) {
+                        const localPath = '/changbai' + json.url;
+                        item[key] = localPath;
+                        inp.value = localPath;
+                        updateVideoPreview();
+                        showToast('✅ 上传成功');
+                    } else {
+                        showToast('❌ 上传失败: ' + json.error, true);
+                    }
+                } catch(err) {
+                    showToast('❌ 上传失败: ' + err.message, true);
+                }
+                uploadBtn.textContent = '🎬 上传视频';
+                uploadBtn.disabled = false;
+                fileInp.value = '';
+            };
+
+            const browseBtn = document.createElement('button');
+            browseBtn.className = 'btn btn-sm';
+            browseBtn.textContent = '📁 从媒体库选视频';
+            browseBtn.style.cssText = 'font-size:11px;padding:4px 10px;';
+            browseBtn.onclick = async () => {
+                try {
+                    const resp = await authFetch('/changbai/api/admin/media-list');
+                    if (resp.status === 401) { showLogin(); return; }
+                    const json = await resp.json();
+                    if (!json.success || json.files.length === 0) { showToast('媒体库为空', true); return; }
+                    const overlay = document.createElement('div');
+                    overlay.className = 'modal-overlay';
+                    const vidFiles = json.files.filter(f => /\.(mp4|webm|avi|mov|mkv)$/i.test(f.name));
+                    overlay.innerHTML = '<div class="modal-box" style="width:560px;max-height:70vh;overflow-y:auto;"><h3>从媒体库选取视频</h3>' +
+                        '<p style="font-size:11px;color:#666;margin-bottom:10px;">点击条目选中 | 点击 ▶ 预览按钮播放</p>' +
+                        '<div style="display:flex;flex-direction:column;gap:8px;">' +
+                        vidFiles.map((f, i) => '<div class="media-select-item media-video-item" style="border:2px solid transparent;border-radius:6px;padding:8px;background:rgba(0,212,255,0.05);transition:border 0.2s;cursor:pointer;" data-url="/changbai' + f.url + '" data-idx="' + i + '" data-name="' + f.name.replace(/"/g,'&quot;') + '">' +
+                            '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">' +
+                            '<div style="display:flex;align-items:center;gap:6px;min-width:0;">' +
+                            '<span style="font-size:20px;flex-shrink:0;">🎬</span>' +
+                            '<div style="min-width:0;"><div style="font-size:13px;color:#e0e0e0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + f.name + '</div>' +
+                            '<div style="font-size:10px;color:#666;">' + new Date(f.time).toLocaleString() + '</div></div>' +
+                            '</div>' +
+                            '<div style="flex-shrink:0;">' +
+                            '<button class="btn btn-sm media-preview-btn" data-idx="' + i + '" data-url="/changbai' + f.url + '" style="font-size:11px;padding:2px 8px;">▶ 预览</button>' +
+                            '</div></div>' +
+                            '<div class="media-video-preview" id="mediaVidPrev_' + i + '" style="display:none;width:100%;max-height:200px;margin-top:4px;">' +
+                            '<video src="/changbai' + f.url + '" controls preload="none" ' +
+                            'style="width:100%;max-height:200px;background:#000;border-radius:4px;"></video></div>' +
+                            '</div>').join('') +
+                        '</div>' +
+                        '<input type="hidden" id="selectedMedia_val">' +
+                        '<input type="hidden" id="selectedMedia_name">' +
+                        '<div class="modal-actions" style="margin-top:14px;">' +
+                        '<button class="btn" onclick="this.closest(\'.modal-overlay\').remove()">取消</button>' +
+                        '<button class="btn btn-primary" id="btnPickMedia">✅ 选取选中视频</button>' +
+                        '<button class="btn" id="btnDelMedia" style="background:rgba(255,80,80,0.15);color:#ff5050;border-color:rgba(255,80,80,0.3);">🗑 删除选中视频</button>' +
+                        '</div></div>';
+                    document.body.append(overlay);
+                    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+
+                    const selInput = document.getElementById('selectedMedia_val');
+                    const nameInput = document.getElementById('selectedMedia_name');
+                    const delBtn = overlay.querySelector('#btnDelMedia');
+                    delBtn.disabled = true;
+                    delBtn.style.opacity = '0.5';
+
+                    function stopAllMediaPreviews(ovl) {
+                        ovl.querySelectorAll('.media-video-preview').forEach(div => {
+                            const v = div.querySelector('video');
+                            if (v) { v.pause(); v.src = ''; }
+                            div.style.display = 'none';
+                        });
+                        ovl.querySelectorAll('.media-preview-btn').forEach(b => { b.textContent = '▶ 预览'; });
+                    }
+
+                    function selectVideo(videoItem, url, name) {
+                        selInput.value = btoa(url);
+                        nameInput.value = name;
+                        overlay.querySelectorAll('.media-video-item').forEach(el => el.style.borderColor = 'transparent');
+                        videoItem.style.borderColor = '#00d4ff';
+                        delBtn.disabled = false;
+                        delBtn.style.opacity = '1';
+                    }
+
+                    // 点击条目行选中
+                    overlay.querySelectorAll('.media-video-item').forEach(item => {
+                        item.addEventListener('click', function(e) {
+                            if (e.target.closest('button')) return;
+                            const url = this.dataset.url;
+                            const name = this.dataset.name;
+                            selectVideo(this, url, name);
+                            stopAllMediaPreviews(overlay);
+                        });
+                    });
+
+                    // 预览按钮事件
+                    overlay.querySelectorAll('.media-preview-btn').forEach(btn => {
+                        btn.onclick = (e) => {
+                            e.stopPropagation();
+                            const idx = btn.dataset.idx;
+                            const prevDiv = document.getElementById('mediaVidPrev_' + idx);
+                            const video = prevDiv.querySelector('video');
+                            const isVisible = prevDiv.style.display !== 'none';
+                            stopAllMediaPreviews(overlay);
+                            if (!isVisible) {
+                                prevDiv.style.display = '';
+                                btn.textContent = '⏸ 收起';
+                                if (!video.src || video.src !== btn.dataset.url) {
+                                    video.src = btn.dataset.url;
+                                }
+                                video.load();
+                                video.play().catch(() => {});
+                            } else {
+                                btn.textContent = '▶ 预览';
+                            }
+                        };
+                    });
+
+                    // 选取按钮
+                    overlay.querySelector('#btnPickMedia').onclick = () => {
+                        const sel = selInput.value;
+                        if (!sel) { showToast('请先选择视频', true); return; }
+                        const path = atob(sel);
+                        item[key] = path;
+                        inp.value = path;
+                        updateVideoPreview();
+                        overlay.remove();
+                    };
+
+                    // 删除按钮
+                    delBtn.onclick = async () => {
+                        const sel = selInput.value;
+                        const name = nameInput.value;
+                        if (!sel) { showToast('请先选择视频', true); return; }
+                        const vidurl = atob(sel);
+                        const filename = vidurl.split('/').pop();
+                        const confirmOverlay = document.createElement('div');
+                        confirmOverlay.className = 'modal-overlay';
+                        confirmOverlay.style.zIndex = '10001';
+                        confirmOverlay.innerHTML = '<div class="modal-box" style="width:380px;text-align:center;">' +
+                            '<h3 style="color:#ff5050;margin-bottom:12px;">⚠️ 确认删除</h3>' +
+                            '<p style="color:#ccc;font-size:13px;margin-bottom:6px;">确定要删除以下视频吗？</p>' +
+                            '<p style="color:#e0e0e0;font-size:12px;word-break:break-all;margin-bottom:16px;background:rgba(0,0,0,0.3);padding:8px;border-radius:4px;">' + name + '</p>' +
+                            '<p style="color:#888;font-size:11px;margin-bottom:16px;">此操作不可撤销</p>' +
+                            '<div style="display:flex;gap:10px;justify-content:center;">' +
+                            '<button class="btn" id="delCancel2">取消</button>' +
+                            '<button class="btn" id="delConfirm2" style="background:rgba(255,80,80,0.2);color:#ff5050;border-color:rgba(255,80,80,0.4);">确认删除</button>' +
+                            '</div></div>';
+                        document.body.append(confirmOverlay);
+                        confirmOverlay.addEventListener('click', e2 => { if (e2.target === confirmOverlay) confirmOverlay.remove(); });
+                        confirmOverlay.querySelector('#delCancel2').onclick = () => confirmOverlay.remove();
+                        confirmOverlay.querySelector('#delConfirm2').onclick = async () => {
+                            confirmOverlay.querySelector('#delConfirm2').textContent = '⏳ 删除中...';
+                            confirmOverlay.querySelector('#delConfirm2').disabled = true;
+                            try {
+                                const resp = await authFetch('/changbai/api/admin/media/' + filename, { method: 'DELETE' });
+                                if (resp.ok) {
+                                    showToast('✅ 已删除: ' + name);
+                                    confirmOverlay.remove();
+                                    const itemEl = overlay.querySelector('.media-video-item[data-url="' + vidurl + '"]');
+                                    if (itemEl) {
+                                        itemEl.style.transition = 'opacity 0.3s';
+                                        itemEl.style.opacity = '0';
+                                        setTimeout(() => itemEl.remove(), 300);
+                                    }
+                                    selInput.value = '';
+                                    nameInput.value = '';
+                                    delBtn.disabled = true;
+                                    delBtn.style.opacity = '0.5';
+                                } else {
+                                    showToast('❌ 删除失败', true);
+                                }
+                            } catch(err) {
+                                showToast('❌ 删除失败: ' + err.message, true);
+                            }
+                        };
+                    };
+                } catch(err) { showToast('❌ 加载失败', true); }
+            };
+            btnRow.append(uploadBtn, browseBtn, fileInp);
+
+            inputGroup.append(btnRow, previewWrap);
+            fRow.append(inputGroup);
+        }
+
+        // RTSP 流类型：配置参数表
+        function renderRtspEditor(fRow, item) {
+            fRow.style.cssText = 'display:flex;flex-direction:column;gap:8px;margin-bottom:8px;width:100%;';
+
+            // 确保 RTSP 配置字段存在
+            if (!item.rtsp_url) item.rtsp_url = '';
+            if (!item.rtsp_username) item.rtsp_username = '';
+            if (!item.rtsp_password) item.rtsp_password = '';
+
+            const rtspFields = [
+                { key: 'rtsp_url', label: 'RTSP 地址', placeholder: 'rtsp://192.168.1.100:554/stream1' },
+                { key: 'rtsp_username', label: '用户名', placeholder: 'admin' },
+                { key: 'rtsp_password', label: '密码', placeholder: '输入密码', type: 'password' },
+            ];
+
+            const formWrap = document.createElement('div');
+            formWrap.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
+
+            rtspFields.forEach(f => {
+                const row = document.createElement('div');
+                row.style.cssText = 'display:flex;align-items:center;gap:8px;';
+                const label = document.createElement('span');
+                label.style.cssText = 'color:#888;font-size:12px;white-space:nowrap;min-width:60px;';
+                label.textContent = f.label + '：';
+                const inp = mkInput(f.type || 'text', item[f.key]);
+                inp.placeholder = f.placeholder;
+                inp.style.cssText = 'padding:6px 10px;background:rgba(0,40,80,0.5);border:1px solid rgba(0,212,255,0.3);border-radius:4px;color:#fff;font-size:12px;min-width:0;max-width:320px;';
+                inp.style.width = '320px';
+                inp.addEventListener('focus', () => { inp.style.borderColor = '#00d4ff'; inp.style.boxShadow = '0 0 6px rgba(0,212,255,0.3)'; });
+                inp.addEventListener('blur', () => { inp.style.borderColor = 'rgba(0,212,255,0.3)'; inp.style.boxShadow = 'none'; });
+                inp.onchange = () => { item[f.key] = inp.value; };
+                row.append(label, inp);
+                formWrap.append(row);
+            });
+
+            // 提示信息
+            const hint = document.createElement('div');
+            hint.style.cssText = 'margin-top:4px;font-size:11px;color:#555;display:flex;align-items:center;gap:6px;';
+            hint.innerHTML = '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#666;"></span> RTSP 流地址配置（大屏端通过流媒体服务解析播放）';
+
+            fRow.append(formWrap, hint);
+        }
+
+        // ─── 表单渲染 ───
+        function buildCard(title, key, fn) {
+            const card = document.createElement('div');
+            card.className = 'section-card';
+            const header = document.createElement('div');
+            header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid rgba(0,212,255,0.15);';
+            const h3 = document.createElement('h3');
+            h3.textContent = title;
+            h3.style.cssText = 'font-size:15px;color:#00d4ff;margin:0;';
+            header.append(h3);
+            // 为有 key 的卡片添加保存按钮（排除根级别）
+            if (key && currentPage && currentData) {
+                const saveBtn = document.createElement('button');
+                saveBtn.className = 'section-save-btn';
+                saveBtn.textContent = '💾 保存';
+                saveBtn.onclick = async function() {
+                    saveBtn.textContent = '⏳ 保存中...';
+                    saveBtn.disabled = true;
+                    const ok = await saveSection(currentPage, currentData);
+                    if (ok) {
+                        saveBtn.className = 'section-save-btn saved';
+                        saveBtn.textContent = '✅ 已保存';
+                        showToast('✅ ' + title + ' 保存成功');
+                    } else {
+                        saveBtn.textContent = '💾 保存';
+                        saveBtn.disabled = false;
+                        showToast('❌ 保存失败', true);
+                    }
+                    setTimeout(() => {
+                        saveBtn.className = 'section-save-btn';
+                        saveBtn.textContent = '💾 保存';
+                        saveBtn.disabled = false;
+                    }, 2000);
+                };
+                header.append(saveBtn);
+            }
+            card.append(header);
+            fn(card);
+            return card;
+        }
+
+        function buildFields(obj, rootObj, container) {
+            Object.keys(obj).forEach(k => {
+                const val = obj[k];
+                const labelText = zhFieldName(k);
+
+                if (Array.isArray(val)) {
+                    const card = document.createElement('div');
+                    card.className = 'section-card';
+                    const headRow = document.createElement('div');
+                    headRow.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid rgba(0,212,255,0.15);';
+                    const titleWrap = document.createElement('div');
+                    titleWrap.style.cssText = 'display:flex;align-items:center;gap:8px;';
+                    const h3 = document.createElement('h3');
+                    h3.textContent = labelText + ' (' + val.length + ')';
+                    h3.style.cssText = 'font-size:15px;color:#00d4ff;margin:0;';
+                    titleWrap.append(h3);
+                    const btnWrap = document.createElement('div');
+                    btnWrap.style.cssText = 'display:flex;gap:6px;';
+                    const addBtn = document.createElement('button');
+                    addBtn.className = 'btn btn-sm';
+                    addBtn.textContent = '+ 添加';
+                    btnWrap.append(addBtn);
+                    const saveBtn = document.createElement('button');
+                    saveBtn.className = 'section-save-btn';
+                    saveBtn.style.cssText = 'position:static;';
+                    saveBtn.textContent = '💾 保存';
+                    saveBtn.onclick = async function() {
+                        saveBtn.textContent = '⏳ 保存中...';
+                        saveBtn.disabled = true;
+                        const ok = await saveSection(currentPage, currentData);
+                        if (ok) {
+                            saveBtn.className = 'section-save-btn saved';
+                            saveBtn.style.cssText = 'position:static;background:#00ff88;';
+                            saveBtn.textContent = '✅ 已保存';
+                            showToast('✅ ' + labelText + ' 保存成功');
+                        } else {
+                            saveBtn.textContent = '💾 保存';
+                            saveBtn.disabled = false;
+                            showToast('❌ 保存失败', true);
+                        }
+                        setTimeout(() => {
+                            saveBtn.className = 'section-save-btn';
+                            saveBtn.style.cssText = 'position:static;';
+                            saveBtn.textContent = '💾 保存';
+                            saveBtn.disabled = false;
+                        }, 2000);
+                    };
+                    btnWrap.append(saveBtn);
+                    headRow.append(titleWrap, btnWrap);
+                    const items = document.createElement('div');
+                    card.append(headRow, items);
+
+                    function renderItems() {
+                        items.innerHTML = '';
+                        val.forEach((item, idx) => {
+                            const wrap = document.createElement('div');
+                            wrap.className = 'array-item';
+                            const fields = document.createElement('div');
+                            fields.className = 'item-fields';
+                            if (typeof item === 'object' && item !== null) {
+                                Object.keys(item).forEach(subK => {
+                                    const subVal = item[subK];
+                                    const subLbl = document.createElement('label');
+                                    subLbl.style.cssText = 'font-size:11px;color:#888;display:block;margin-bottom:2px;';
+                                    if (k === 'key_people' && subK === 'count') {
+                                        subLbl.textContent = '管控等级';
+                                    } else {
+                                        subLbl.textContent = zhFieldName(subK);
+                                    }
+                                    fields.append(subLbl);
+                                    const fRow = document.createElement('div');
+                                    fRow.style.cssText = 'display:flex;gap:6px;margin-bottom:6px;';
+                                    if (subK === 'color' || subK === 'status_color') {
+                                        const cp = mkColorPicker(subVal);
+                                        cp.querySelector('input').oninput = () => { item[subK] = cp.getColor(); };
+                                        fRow.append(cp);
+                                    } else if (typeof subVal === 'number') {
+                                        const inp = mkInput('number', subVal);
+                                        inp.onchange = () => { item[subK] = parseFloat(inp.value) || 0; };
+                                        fRow.append(inp);
+                                    } else if (typeof subVal === 'boolean') {
+                                        const sel = mkSelect([['true','是'],['false','否']], subVal);
+                                        sel.onchange = () => { item[subK] = sel.value === 'true'; };
+                                        fRow.append(sel);
+                                    } else if (subK === 'media_type') {
+                                        const sel = mkSelect([['image','图片'],['video','视频'],['rtsp','RTSP流']], subVal);
+                                        sel.onchange = () => { item[subK] = sel.value; renderItems(); };
+                                        fRow.append(sel);
+                                    } else if (subK === 'status') {
+                                        let statusOptions;
+                                        if (k === 'dispute_table') {
+                                            statusOptions = [['已化解','已化解'],['调解中','调解中'],['待调解','待调解'],['处理中','处理中']];
+                                        } else {
+                                            statusOptions = [['online','在线'],['offline','离线'],['alert','告警'],['connecting','接入中'],['warning','预警'],['待命','待命'],['处理中','处理中'],['待处理','待处理'],['已处置','已处置']];
+                                        }
+                                        const sel = mkSelect(statusOptions, subVal);
+                                        sel.onchange = () => { item[subK] = sel.value; };
+                                        fRow.append(sel);
+                                    } else if (subK === 'type') {
+                                        // 根据父级内容区分类型下拉
+                                        let typeOptions;
+                                        if (k === 'key_people') {
+                                            typeOptions = [['社区矫正人员','社区矫正人员'],['精神障碍患者','精神障碍患者'],['刑满释放人员','刑满释放人员'],['吸毒人员','吸毒人员'],['重点信访人员','重点信访人员'],['其他高危人员','其他高危人员']];
+                                        } else if (k === 'dispute_table') {
+                                            typeOptions = [['邻里纠纷','邻里纠纷'],['物业纠纷','物业纠纷'],['劳资纠纷','劳资纠纷'],['家庭纠纷','家庭纠纷'],['信访投诉','信访投诉'],['其他纠纷','其他纠纷']];
+                                        } else {
+                                            typeOptions = [['alert','告警'],['warning','预警'],['normal','正常'],['command','指挥中心'],['resource','资源'],['info','信息'],['event','事件']];
+                                        }
+                                        const sel = mkSelect(typeOptions, subVal);
+                                        sel.onchange = () => { item[subK] = sel.value; };
+                                        fRow.append(sel);
+                                    } else if (subK === 'trend_type') {
+                                        const sel = mkSelect([['up','上升'],['down','下降'],['stable','平稳']], subVal);
+                                        sel.onchange = () => { item[subK] = sel.value; };
+                                        fRow.append(sel);
+                                    } else if (subK === 'animate') {
+                                        const sel = mkSelect([['true','是'],['false','否']], subVal);
+                                        sel.onchange = () => { item[subK] = sel.value === 'true'; };
+                                        fRow.append(sel);
+                                    } else if (subK === 'stats') {
+                                        const statsWrap = document.createElement('div');
+                                        statsWrap.style.cssText = 'width:100%;background:rgba(0,0,0,0.2);border-radius:6px;padding:8px;margin-bottom:4px;';
+                                        const statsList = document.createElement('div');
+                                        const renderStats = () => {
+                                            statsList.innerHTML = '';
+                                            const arr = subVal || [];
+                                            arr.forEach((s, si) => {
+                                                const sRow = document.createElement('div');
+                                                sRow.style.cssText = 'display:flex;gap:6px;align-items:center;margin-bottom:4px;';
+                                                const lblInp = mkInput('text', s.label || '');
+                                                lblInp.placeholder = '指标名称';
+                                                lblInp.style.flex = '1';
+                                                lblInp.onchange = () => { s.label = lblInp.value; };
+                                                const valInp = mkInput('text', s.value || '');
+                                                valInp.placeholder = '数值';
+                                                valInp.style.flex = '1';
+                                                valInp.onchange = () => { s.value = valInp.value; };
+                                                const cp = mkColorPicker(s.color || '');
+                                                cp.style.flex = '1';
+                                                cp.querySelector('input').oninput = () => { s.color = cp.getColor(); };
+                                                const delBtn = document.createElement('button');
+                                                delBtn.className = 'btn-icon danger';
+                                                delBtn.textContent = '✕';
+                                                delBtn.style.flexShrink = '0';
+                                                delBtn.onclick = () => { arr.splice(si, 1); renderStats(); };
+                                                sRow.append(lblInp, valInp, cp, delBtn);
+                                                statsList.append(sRow);
+                                            });
+                                        };
+                                        renderStats();
+                                        statsWrap.append(statsList);
+                                        const addStatBtn = document.createElement('button');
+                                        addStatBtn.className = 'btn btn-sm';
+                                        addStatBtn.textContent = '+ 添加指标';
+                                        addStatBtn.onclick = () => {
+                                            if (!item.stats) item.stats = [];
+                                            item.stats.push({ label: '', value: '', color: '' });
+                                            renderStats();
+                                        };
+                                        statsWrap.append(addStatBtn);
+                                        fRow.append(statsWrap);
+                                    } else if (subK === 'img' && k === 'cameras') {
+                                        // 根据 media_type 动态显示不同的操作界面
+                                        const mt = item.media_type || 'image';
+                                        if (mt === 'image') {
+                                            renderImageEditor(fRow, subK, subVal, item);
+                                        } else if (mt === 'video' || mt === 'mp4') {
+                                            renderVideoEditor(fRow, subK, subVal, item);
+                                        } else if (mt === 'rtsp') {
+                                            renderRtspEditor(fRow, item);
+                                        }
+                                    } else {
+                                        const inp = mkInput('text', subVal);
+                                        inp.onchange = () => { item[subK] = inp.value; };
+                                        fRow.append(inp);
+                                    }
+                                    fields.append(fRow);
+                                });
+                            } else {
+                                const inp = mkInput('text', String(val[idx]));
+                                inp.onchange = () => { val[idx] = inp.value; };
+                                fields.append(inp);
+                            }
+                            const actions = document.createElement('div');
+                            actions.className = 'item-actions';
+                            const delBtn = document.createElement('button');
+                            delBtn.className = 'btn-icon danger';
+                            delBtn.textContent = '✕';
+                            delBtn.onclick = () => { val.splice(idx, 1); renderItems(); };
+                            actions.append(delBtn);
+                            wrap.append(fields, actions);
+                            items.append(wrap);
+                        });
+                    }
+                    addBtn.onclick = () => {
+                        const first = val[0];
+                        if (typeof first === 'object' && first !== null) {
+                            const clone = {};
+                            Object.keys(first).forEach(kk => {
+                                clone[kk] = typeof first[kk] === 'number' ? 0 :
+                                    typeof first[kk] === 'boolean' ? false : '';
+                            });
+                            val.push(clone);
+                        } else val.push('');
+                        renderItems();
+                    };
+                    renderItems();
+                    container.append(card);
+                    return;
+                }
+
+                // 地图降级图片：字符串类型，需在 object 分支外独立处理
+                if (k === 'map_image') {
+                    const card = document.createElement('div');
+                    card.className = 'section-card';
+                    const h3 = document.createElement('h3');
+                    h3.textContent = '🗺️ 地图降级图片';
+                    h3.style.cssText = 'font-size:15px;color:#00d4ff;margin:0 0 8px 0;';
+                    card.append(h3);
+                    const note = document.createElement('div');
+                    note.style.cssText = 'font-size:11px;color:#ff9900;margin-bottom:6px;padding:6px 10px;background:rgba(255,153,0,0.1);border-left:3px solid #ff9900;border-radius:4px;';
+                    note.textContent = '⚠️ 此图片仅用于在线地图（高德）无法加载时作为降级备选方案。正常在线时不显示。';
+                    card.append(note);
+                    const previewWrap = document.createElement('div');
+                    previewWrap.style.cssText = 'width:320px;height:180px;margin-bottom:8px;border:1px solid rgba(0,212,255,0.2);border-radius:6px;overflow:hidden;background:rgba(0,20,40,0.6);display:flex;align-items:center;justify-content:center;position:relative;';
+                    const previewImg = document.createElement('img');
+                    previewImg.style.cssText = 'max-width:100%;max-height:100%;object-fit:cover;display:none;';
+                    previewImg.src = (typeof val === 'string' ? val : '') || '';
+                    const placeholder = document.createElement('span');
+                    placeholder.style.cssText = 'color:rgba(0,212,255,0.3);font-size:13px;';
+                    placeholder.textContent = '暂无图片';
+                    if (typeof val === 'string' && val) { previewImg.style.display = 'block'; placeholder.style.display = 'none'; }
+                    previewWrap.append(previewImg, placeholder);
+                    card.append(previewWrap);
+                    const urlRow = mkRow('图片路径');
+                    const urlInp = mkInput('text', (typeof val === 'string' ? val : ''));
+                    urlInp.style.maxWidth = '320px';
+                    urlInp.placeholder = '/changbai/uploads/map.png 或刷新预览';
+                    urlInp.onchange = () => {
+                        obj[k] = urlInp.value;
+                        if (urlInp.value) { previewImg.src = urlInp.value; previewImg.style.display = 'block'; placeholder.style.display = 'none'; }
+                        else { previewImg.style.display = 'none'; placeholder.style.display = ''; }
+                    };
+                    urlRow.append(urlInp);
+                    const refreshBtn = document.createElement('button');
+                    refreshBtn.className = 'btn btn-sm';
+                    refreshBtn.textContent = '🔄';
+                    refreshBtn.title = '刷新预览';
+                    refreshBtn.onclick = () => {
+                        const v = urlInp.value || (typeof val === 'string' ? val : '') || '';
+                        if (v) { previewImg.src = v + '?t=' + Date.now(); previewImg.style.display = 'block'; placeholder.style.display = 'none'; }
+                    };
+                    refreshBtn.style.cssText = 'margin-left:4px;padding:4px 8px;';
+                    urlRow.append(refreshBtn);
+                    card.append(urlRow);
+                    const uploadRow = document.createElement('div');
+                    uploadRow.style.cssText = 'display:flex;gap:6px;align-items:center;margin-bottom:6px;';
+                    const uploadLabel = document.createElement('label');
+                    uploadLabel.className = 'btn btn-sm';
+                    uploadLabel.style.cssText = 'cursor:pointer;display:inline-block;';
+                    uploadLabel.textContent = '📁 上传图片';
+                    const fileInp = document.createElement('input');
+                    fileInp.type = 'file'; fileInp.accept = 'image/*'; fileInp.style.display = 'none';
+                    fileInp.onchange = async () => {
+                        const file = fileInp.files[0];
+                        if (!file) return;
+                        const fd = new FormData(); fd.append('file', file);
+                        try {
+                            const resp = await authFetch('/changbai/api/admin/upload-media', { method: 'POST', body: fd });
+                            const result = await resp.json();
+                            if (result.success) {
+                                const fullUrl = '/changbai' + result.url;
+                                urlInp.value = fullUrl; obj[k] = fullUrl;
+                                previewImg.src = fullUrl + '?t=' + Date.now();
+                                previewImg.style.display = 'block'; placeholder.style.display = 'none';
+                                showToast('✅ 上传成功');
+                            } else showToast('❌ 上传失败', true);
+                        } catch (e) { showToast('❌ 上传异常', true); }
+                        fileInp.value = '';
+                    };
+                    uploadLabel.append(fileInp);
+                    uploadRow.append(uploadLabel);
+                    const pickBtn = document.createElement('button');
+                    pickBtn.className = 'btn btn-sm';
+                    pickBtn.textContent = '🖼️ 媒体库';
+                    pickBtn.onclick = async () => {
+                        try {
+                            const resp = await authFetch('/changbai/api/admin/media-list?type=image');
+                            const result = await resp.json();
+                            if (!result.success || !result.files.length) { showToast('❌ 暂无媒体文件', true); return; }
+                            const imgFiles = result.files.filter(f => /\.(jpg|jpeg|png|gif|webp)$/i.test(f.name));
+                            if (!imgFiles.length) { showToast('❌ 暂无图片文件', true); return; }
+                            const overlay = document.createElement('div');
+                            overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;';
+                            const panel = document.createElement('div');
+                            panel.style.cssText = 'background:#0d2137;border:1px solid rgba(0,212,255,0.3);border-radius:10px;padding:16px;max-width:560px;max-height:70vh;overflow-y:auto;';
+                            panel.innerHTML = '<h3 style="color:#00d4ff;margin:0 0 10px 0;font-size:14px;">📷 选择图片</h3>';
+                            const grid = document.createElement('div');
+                            grid.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:8px;';
+                            imgFiles.forEach(f => {
+                                const item = document.createElement('div');
+                                item.style.cssText = 'border:2px solid transparent;border-radius:6px;overflow:hidden;cursor:pointer;transition:border 0.2s;background:rgba(0,212,255,0.05);';
+                                item.innerHTML = '<img src="/changbai' + f.url + '" style="width:100%;height:100px;object-fit:cover;display:block;" onerror="this.parentElement.style.display="none""><div style="font-size:10px;color:#8899aa;padding:4px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + f.name + '</div>';
+                                item.onclick = () => {
+                                    const fullUrl = '/changbai' + f.url;
+                                    urlInp.value = fullUrl; obj[k] = fullUrl;
+                                    previewImg.src = fullUrl + '?t=' + Date.now();
+                                    previewImg.style.display = 'block'; placeholder.style.display = 'none';
+                                    panel.parentElement.remove();
+                                    showToast('✅ 已选取');
+                                };
+                                grid.append(item);
+                            });
+                            panel.append(grid);
+                            const closeBtn = document.createElement('button');
+                            closeBtn.className = 'btn btn-sm';
+                            closeBtn.style.cssText = 'margin-top:10px;display:block;width:100%;';
+                            closeBtn.textContent = '取消';
+                            closeBtn.onclick = () => overlay.remove();
+                            panel.append(closeBtn);
+                            overlay.append(panel);
+                            overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+                            document.body.append(overlay);
+                        } catch (e) { showToast('❌ 获取媒体列表失败', true); }
+                    };
+                    uploadRow.append(pickBtn);
+                    card.append(uploadRow);
+                    const mapImgSaveBtn = document.createElement('button');
+                    mapImgSaveBtn.className = 'section-save-btn';
+                    mapImgSaveBtn.style.cssText = 'position:static;margin-top:8px;';
+                    mapImgSaveBtn.textContent = '💾 保存';
+                    mapImgSaveBtn.onclick = async function() {
+                        mapImgSaveBtn.textContent = '⏳ 保存中...';
+                        mapImgSaveBtn.disabled = true;
+                        const ok = await saveSection(currentPage, currentData);
+                        if (ok) { mapImgSaveBtn.textContent = '✅ 已保存'; showToast('✅ 地图降级图片 保存成功'); }
+                        else { mapImgSaveBtn.textContent = '💾 保存'; showToast('❌ 保存失败', true); }
+                        setTimeout(() => { mapImgSaveBtn.textContent = '💾 保存'; mapImgSaveBtn.disabled = false; }, 2000);
+                    };
+                    card.append(mapImgSaveBtn);
+                    container.append(card);
+                    return;
+                }
+
+                if (typeof val === 'object' && val !== null) {
+                    if (k === 'dispute_chart') {
+                        // 纠纷趋势图专用表格编辑器
+                        const nRows = val.rows || [];
+                        const cols = val.dataset_labels || [];
+                        const card = document.createElement('div');
+                        card.className = 'section-card';
+                        const h3 = document.createElement('h3');
+                        h3.textContent = labelText;
+                        h3.style.cssText = 'font-size:15px;color:#00d4ff;margin:0 0 10px 0;';
+                        card.append(h3);
+                        const tip = document.createElement('div');
+                        tip.style.cssText = 'font-size:11px;color:#8899aa;margin-bottom:8px;';
+                        tip.textContent = '每行一个纠纷类别，每列一个统计指标。双击列名修改指标名。';
+                        card.append(tip);
+                        const tblWrap = document.createElement('div');
+                        tblWrap.style.cssText = 'overflow-x:auto;margin-bottom:8px;';
+                        renderTable(tblWrap, nRows, cols, val);
+                        card.append(tblWrap);
+                        const btnBar = document.createElement('div');
+                        btnBar.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;';
+                        ['+ 添加列', '+ 添加行', '- 删除列', '- 删除行'].forEach((label, i) => {
+                            const btn = document.createElement('button');
+                            btn.className = 'btn btn-sm';
+                            if (i >= 2) btn.style.cssText = 'background:rgba(255,68,68,0.15);border-color:rgba(255,68,68,0.4);';
+                            btn.textContent = label;
+                            btn.onclick = () => {
+                                if (i === 0) {
+                                    const name = prompt('指标名称：', '新指标');
+                                    if (name) { val.dataset_labels = cols.concat(name); nRows.forEach(r => { r[name] = 0; }); renderTable(tblWrap, nRows, cols, val); }
+                                } else if (i === 1) {
+                                    const obj = { name: '新类别' }; cols.forEach(cn => { obj[cn] = 0; });
+                                    nRows.push(obj); renderTable(tblWrap, nRows, cols, val);
+                                } else if (i === 2) {
+                                    if (cols.length <= 1) return alert('至少保留一列');
+                                    const last = cols.pop();
+                                    nRows.forEach(r => { delete r[last]; });
+                                    renderTable(tblWrap, nRows, cols, val);
+                                } else {
+                                    if (nRows.length <= 1) return alert('至少保留一行');
+                                    nRows.pop(); renderTable(tblWrap, nRows, cols, val);
+                                }
+                            };
+                            btnBar.append(btn);
+                        });
+                        card.append(btnBar);
+                        const saveBtn = document.createElement('button');
+                        saveBtn.className = 'section-save-btn';
+                        saveBtn.style.cssText = 'position:static;margin-top:10px;';
+                        saveBtn.textContent = '💾 保存';
+                        saveBtn.onclick = async function() {
+                            saveBtn.textContent = '⏳ 保存中...';
+                            saveBtn.disabled = true;
+                            const ok = await saveSection(currentPage, currentData);
+                            if (ok) {
+                                saveBtn.textContent = '✅ 已保存';
+                                showToast('✅ ' + labelText + ' 保存成功');
+                            } else {
+                                saveBtn.textContent = '💾 保存';
+                                showToast('❌ 保存失败', true);
+                            }
+                            setTimeout(() => { saveBtn.textContent = '💾 保存'; saveBtn.disabled = false; saveBtn.style.background = ''; }, 2000);
+                        };
+                        card.append(saveBtn);
+                        container.append(card);
+                    } else if (k === 'security_index_chart') {
+                        // 社区治安指数图表：单列表格编辑器
+                        const nRows = val.rows || [];
+                        const label = val.dataset_label || '数值';
+                        const card = document.createElement('div');
+                        card.className = 'section-card';
+                        const h3 = document.createElement('h3');
+                        h3.textContent = labelText;
+                        h3.style.cssText = 'font-size:15px;color:#00d4ff;margin:0 0 10px 0;';
+                        card.append(h3);
+                        const tip = document.createElement('div');
+                        tip.style.cssText = 'font-size:11px;color:#8899aa;margin-bottom:8px;';
+                        tip.textContent = '每行一个社区，数值为治安指数（0-100）。';
+                        card.append(tip);
+                        const tblWrap = document.createElement('div');
+                        tblWrap.style.cssText = 'overflow-x:auto;margin-bottom:8px;';
+                        const redraw = () => {
+                            tblWrap.innerHTML = '';
+                            const table = document.createElement('table');
+                            table.style.cssText = 'border-collapse:collapse;font-size:12px;';
+                            const thead = document.createElement('thead');
+                            const hRow = document.createElement('tr');
+                            hRow.style.cssText = 'background:rgba(0,212,255,0.08);';
+                            ['社区', label].forEach(t => {
+                                const th = document.createElement('th');
+                                th.style.cssText = 'padding:6px 8px;text-align:center;border:1px solid rgba(0,212,255,0.15);color:#00d4ff;';
+                                th.textContent = t;
+                                hRow.append(th);
+                            });
+                            thead.append(hRow);
+                            table.append(thead);
+                            const tbody = document.createElement('tbody');
+                            nRows.forEach((r, ri) => {
+                                const tr = document.createElement('tr');
+                                tr.style.cssText = 'background:' + (ri % 2 ? 'rgba(0,212,255,0.03)' : 'transparent') + ';';
+                                ['name', 'value'].forEach((fn, fi) => {
+                                    const td = document.createElement('td');
+                                    td.style.cssText = 'padding:4px 4px;border:1px solid rgba(0,212,255,0.12);width:80px;';
+                                    const inp = mkInput(fi === 0 ? 'text' : 'number', r[fn] || (fi === 0 ? '' : 0));
+                                    inp.style.maxWidth = 'none';
+                                    inp.style.padding = '6px 4px';
+                                    inp.placeholder = fi === 0 ? '社区名' : '指数';
+                                    inp.onchange = () => { r[fn] = fi === 0 ? inp.value : (parseFloat(inp.value) || 0); };
+                                    td.append(inp);
+                                    tr.append(td);
+                                });
+                                tbody.append(tr);
+                            });
+                            table.append(tbody);
+                            tblWrap.append(table);
+                        };
+                        redraw();
+                        card.append(tblWrap);
+                        const btnBar = document.createElement('div');
+                        btnBar.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;';
+                        const addBtn = document.createElement('button');
+                        addBtn.className = 'btn btn-sm';
+                        addBtn.textContent = '+ 添加行';
+                        addBtn.onclick = () => { nRows.push({ name: '新社区', value: 0 }); redraw(); };
+                        const delBtn = document.createElement('button');
+                        delBtn.className = 'btn btn-sm';
+                        delBtn.style.cssText = 'background:rgba(255,68,68,0.15);border-color:rgba(255,68,68,0.4);';
+                        delBtn.textContent = '- 删除行';
+                        delBtn.onclick = () => { if (nRows.length <= 1) return alert('至少保留一行'); nRows.pop(); redraw(); };
+                        btnBar.append(addBtn, delBtn);
+                        card.append(btnBar);
+                        const saveBtn = document.createElement('button');
+                        saveBtn.className = 'section-save-btn';
+                        saveBtn.style.cssText = 'position:static;margin-top:10px;';
+                        saveBtn.textContent = '💾 保存';
+                        saveBtn.onclick = async function() {
+                            saveBtn.textContent = '⏳ 保存中...';
+                            saveBtn.disabled = true;
+                            const ok = await saveSection(currentPage, currentData);
+                            if (ok) {
+                                saveBtn.textContent = '✅ 已保存';
+                                showToast('✅ ' + labelText + ' 保存成功');
+                            } else {
+                                saveBtn.textContent = '💾 保存';
+                                showToast('❌ 保存失败', true);
+                            }
+                            setTimeout(() => { saveBtn.textContent = '💾 保存'; saveBtn.disabled = false; saveBtn.style.background = ''; }, 2000);
+                        };
+                        card.append(saveBtn);
+                        container.append(card);
+                    } else if (k.endsWith('_chart') || k === 'datasets' || k === 'pie_charts') {
+                        const card = buildCard(labelText, k, c => {
+                            Object.keys(val).forEach(subK => {
+                                const subVal = val[subK];
+                                if (Array.isArray(subVal)) {
+                                    const r = mkRow(zhFieldName(subK));
+                                    const inp = mkInput('text', JSON.stringify(subVal));
+                                    inp.style.fontFamily = 'monospace';
+                                    inp.style.fontSize = '11px';
+                                    inp.onchange = () => { try { val[subK] = JSON.parse(inp.value); } catch(e) {} };
+                                    r.append(inp);
+                                    c.append(r);
+                                } else if (typeof subVal === 'object' && subVal !== null) {
+                                    buildFields(subVal, val, c);
+                                } else {
+                                    const r = mkRow(zhFieldName(subK));
+                                    const inp = mkInput(typeof subVal === 'number' ? 'number' : 'text', subVal);
+                                    inp.onchange = () => {
+                                        val[subK] = typeof subVal === 'number' ? (parseFloat(inp.value) || 0) : inp.value;
+                                    };
+                                    r.append(inp);
+                                    c.append(r);
+                                }
+                            });
+                        });
+                        container.append(card);
+                    } else {
+                        const card = buildCard(labelText, k, c => { buildFields(val, obj, c); });
+                        container.append(card);
+                    }
+                    return;
+                }
+
+                let inputEl;
+                if (k.endsWith('color') || k === 'status_color') {
+                    inputEl = mkColorPicker(val);
+                    const row = mkRow(labelText, inputEl);
+                    container.append(row);
+                    return;
+                } else if (typeof val === 'number') {
+                    inputEl = mkInput('number', val);
+                    inputEl.onchange = () => { obj[k] = parseFloat(inputEl.value) || 0; };
+                } else if (typeof val === 'boolean') {
+                    inputEl = mkSelect([['true','是'],['false','否']], val);
+                    inputEl.onchange = () => { obj[k] = inputEl.value === 'true'; };
+                } else {
+                    inputEl = mkInput('text', val);
+                    inputEl.onchange = () => { obj[k] = inputEl.value; };
+                }
+                const row = mkRow(labelText, inputEl);
+                container.append(row);
+            });
+        }
+
+        function renderForm() {
+            if (!currentData) return;
+            const container = document.getElementById('contentArea');
+            container.innerHTML = '';
+            buildFields(currentData, currentData, container);
+        }
+
+        // ─── 媒体管理 ───
+        async function renderMediaPage() {
+            const container = document.getElementById('contentArea');
+            container.innerHTML = '<div class="upload-area" id="uploadArea">' +
+                '<div style="font-size:36px;">📁</div><div style="margin:10px 0;color:#00d4ff;">点击或拖拽上传监控画面</div>' +
+                '<div style="font-size:12px;color:#666;">支持 JPG/PNG/GIF/WebP/MP4/WEBM，最大 100MB</div>' +
+                '<input type="file" id="fileInput" accept="image/*,video/*" multiple></div>' +
+                '<div class="media-grid" id="mediaGrid"></div>';
+            document.getElementById('uploadArea').addEventListener('click', () => { document.getElementById('fileInput').click(); });
+            document.getElementById('fileInput').addEventListener('change', async e => {
+                for (const file of e.target.files) {
+                    const fd = new FormData(); fd.append('file', file);
+                    try {
+                        const resp = await authFetch('/changbai/api/admin/upload-media', { method: 'POST', body: fd });
+                        if (resp.status === 401) { showLogin(); return; }
+                        const json = await resp.json();
+                        showToast(json.success ? '✅ 上传成功: ' + file.name : '❌ 上传失败: ' + json.error, !json.success);
+                    } catch(err) { showToast('❌ 上传失败', true); }
+                }
+                loadMediaList();
+            });
+            loadMediaList();
+        }
+
+        async function loadMediaList() {
+            const grid = document.getElementById('mediaGrid'); if (!grid) return;
+            try {
+                const resp = await authFetch('/changbai/api/admin/media-list');
+                if (resp.status === 401) { showLogin(); return; }
+                const json = await resp.json();
+                if (!json.success) return;
+                grid.innerHTML = json.files.map(f => {
+                    const isVideo = /\.(mp4|webm)$/i.test(f.name);
+                    const m = isVideo ? '<video src="' + f.url + '" style="width:100%;height:140px;object-fit:cover;"></video>'
+                        : '<img src="' + f.url + '" style="width:100%;height:140px;object-fit:cover;">';
+                    return '<div class="media-card">' + m +
+                        '<div class="media-url" onclick="navigator.clipboard.writeText(\'' + f.url + '\')" title="点击复制URL">' + f.url + '</div>' +
+                        '<div class="media-name">' + f.name + '</div>' +
+                        '<div class="media-actions"><button class="btn btn-sm" onclick="navigator.clipboard.writeText(\'' + f.url + '\')">📋 复制URL</button>' +
+                        (currentUser && currentUser.role === 'admin' ? '<button class="btn btn-sm btn-danger" onclick="deleteMedia(\'' + f.name + '\')">🗑 删除</button>' : '') +
+                        '</div></div>';
+                }).join('');
+                if (json.files.length === 0) grid.innerHTML = '<div style="text-align:center;color:#666;padding:40px;">暂无媒体文件</div>';
+            } catch(err) {}
+        }
+
+        async function deleteMedia(filename) {
+            if (!confirm('确定删除 ' + filename + '？')) return;
+            try {
+                const resp = await authFetch('/changbai/api/admin/media/' + filename, { method: 'DELETE' });
+                if (resp.status === 401) { showLogin(); return; }
+                showToast('✅ 已删除');
+                loadMediaList();
+            } catch(err) { showToast('❌ 删除失败', true); }
+        }
+
+        // ─── 用户管理 ───
+        async function renderUsersPage() {
+            if (!currentUser || currentUser.role !== 'admin') {
+                document.getElementById('contentArea').innerHTML = '<div style="text-align:center;color:#666;padding:60px;">⛔ 需要管理员权限</div>';
+                return;
+            }
+            const container = document.getElementById('contentArea');
+            container.innerHTML = '<div class="section-card"><h3>用户列表</h3>' +
+                '<div style="margin-bottom:12px;"><button class="btn btn-primary btn-sm" id="btnAddUser">+ 新增用户</button></div>' +
+                '<div id="userTableWrap"></div></div>';
+            document.getElementById('btnAddUser').addEventListener('click', showAddUserModal);
+            await refreshUserTable();
+        }
+
+        async function refreshUserTable() {
+            const wrap = document.getElementById('userTableWrap'); if (!wrap) return;
+            try {
+                const resp = await authFetch('/changbai/api/admin/users');
+                const json = await resp.json();
+                if (!json.success) { wrap.innerHTML = '<div style="color:#666;padding:20px;">加载失败</div>'; return; }
+                if (json.users.length === 0) {
+                    wrap.innerHTML = '<div style="text-align:center;color:#666;padding:30px;">暂无用户</div>';
+                    return;
+                }
+                wrap.innerHTML = '<table class="user-table"><thead><tr><th>用户名</th><th>角色</th><th>创建时间</th><th>操作</th></tr></thead><tbody>' +
+                    json.users.map(u => '<tr><td>' + u.username + '</td><td><span class="role-badge role-' + u.role + '">' +
+                        (u.role === 'admin' ? '管理员' : '编辑者') +
+                        '</span></td><td style="font-size:12px;color:#888;">' + (u.createdAt ? u.createdAt.slice(0,10) : '') +
+                        '</td><td>' +
+                        (u.id !== 'admin' ? '<button class="btn btn-sm" onclick="showResetPwdModal(\'' + u.id + '\',\'' + u.username + '\')">🔑 改密</button>' +
+                            '<button class="btn btn-sm btn-danger" style="margin-left:6px;" onclick="delUser(\'' + u.id + '\',\'' + u.username + '\')">🗑 删除</button>'
+                            : '<span style="color:#666;font-size:12px;">内置</span>') +
+                        '</td></tr>').join('') +
+                    '</tbody></table>';
+            } catch(err) { wrap.innerHTML = '<div style="color:#666;padding:20px;">加载失败</div>'; }
+        }
+
+        function showAddUserModal() {
+            const overlay = document.createElement('div');
+            overlay.className = 'modal-overlay';
+            overlay.innerHTML = '<div class="modal-box"><h3>新增用户</h3>' +
+                '<input id="newUsername" placeholder="用户名"><input id="newPassword" type="password" placeholder="密码">' +
+                '<select id="newRole" style="width:100%;padding:10px;margin-bottom:14px;background:rgba(0,40,80,0.5);border:1px solid rgba(0,212,255,0.3);border-radius:6px;color:#fff;font-size:13px;">' +
+                '<option value="editor">编辑者</option><option value="admin">管理员</option></select>' +
+                '<div class="modal-actions"><button class="btn" id="btnCancelAdd">取消</button>' +
+                '<button class="btn btn-primary" id="btnConfirmAdd">确定</button></div></div>';
+            document.body.append(overlay);
+            document.getElementById('btnCancelAdd').onclick = () => overlay.remove();
+            overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+            document.getElementById('btnConfirmAdd').onclick = async () => {
+                const username = document.getElementById('newUsername').value.trim();
+                const password = document.getElementById('newPassword').value.trim();
+                const role = document.getElementById('newRole').value;
+                if (!username || !password) return showToast('用户名和密码不能为空', true);
+                try {
+                    const resp = await authFetch('/changbai/api/admin/users', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username, password, role })
+                    });
+                    const json = await resp.json();
+                    showToast(json.success ? '✅ ' + json.message || '用户已创建' : '❌ ' + json.error, !json.success);
+                    if (json.success) { overlay.remove(); refreshUserTable(); }
+                } catch(err) { showToast('❌ 操作失败', true); }
+            };
+        }
+
+        function showResetPwdModal(id, username) {
+            const overlay = document.createElement('div');
+            overlay.className = 'modal-overlay';
+            overlay.innerHTML = '<div class="modal-box"><h3>修改密码 - ' + username + '</h3>' +
+                '<input id="resetPwd" type="password" placeholder="新密码">' +
+                '<div class="modal-actions"><button class="btn" id="btnCancelPwd">取消</button>' +
+                '<button class="btn btn-primary" id="btnConfirmPwd">确定</button></div></div>';
+            document.body.append(overlay);
+            document.getElementById('btnCancelPwd').onclick = () => overlay.remove();
+            overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+            document.getElementById('btnConfirmPwd').onclick = async () => {
+                const password = document.getElementById('resetPwd').value.trim();
+                if (!password) return showToast('密码不能为空', true);
+                try {
+                    const resp = await authFetch('/changbai/api/admin/users/' + id + '/password', {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ password })
+                    });
+                    const json = await resp.json();
+                    showToast(json.success ? '✅ 密码已更新' : '❌ ' + json.error, !json.success);
+                    if (json.success) overlay.remove();
+                } catch(err) { showToast('❌ 操作失败', true); }
+            };
+        }
+
+        async function delUser(id, username) {
+            if (!confirm('确定删除用户 "' + username + '"？此操作不可撤销。')) return;
+            try {
+                const resp = await authFetch('/changbai/api/admin/users/' + id, { method: 'DELETE' });
+                const json = await resp.json();
+                showToast(json.success ? '✅ 已删除' : '❌ ' + json.error, !json.success);
+                refreshUserTable();
+            } catch(err) { showToast('❌ 操作失败', true); }
+        }
+
+        // ─── 初始化 ───
+        (async function init() {
+            if (await checkAuth()) {
+                currentPage = 'overview';
+                loadPage('overview');
+            }
+        })();
+    </script>
+</body>
+</html>
