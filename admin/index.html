@@ -1631,12 +1631,18 @@
                                             typeOptions = [['社区矫正人员','社区矫正人员'],['精神障碍患者','精神障碍患者'],['刑满释放人员','刑满释放人员'],['吸毒人员','吸毒人员'],['重点信访人员','重点信访人员'],['其他高危人员','其他高危人员']];
                                         } else if (k === 'dispute_table') {
                                             typeOptions = [['邻里纠纷','邻里纠纷'],['物业纠纷','物业纠纷'],['劳资纠纷','劳资纠纷'],['家庭纠纷','家庭纠纷'],['信访投诉','信访投诉'],['其他纠纷','其他纠纷']];
+                                        } else if (k === 'recent_captures') {
+                                            typeOptions = [['高危人员','高危人员'],['重点人员','重点人员'],['事件报警','事件报警']];
                                         } else {
                                             typeOptions = [['alert','告警'],['warning','预警'],['normal','正常'],['command','指挥中心'],['resource','资源'],['info','信息'],['event','事件']];
                                         }
                                         const sel = mkSelect(typeOptions, subVal);
                                         sel.onchange = () => { item[subK] = sel.value; };
                                         fRow.append(sel);
+                                    } else if (k === 'recent_captures' && subK === 'time') {
+                                        const inp = mkInput('datetime-local', subVal && subVal.includes('T') ? subVal.slice(0,16) : '');
+                                        inp.onchange = () => { item[subK] = inp.value; };
+                                        fRow.append(inp);
                                     } else if (subK === 'trend_type') {
                                         const sel = mkSelect([['up','上升'],['down','下降'],['stable','平稳']], subVal);
                                         sel.onchange = () => { item[subK] = sel.value; };

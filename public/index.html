@@ -1888,12 +1888,17 @@ function renderSecurity(d) {
     // 最近抓拍
     const capturesList = document.querySelector('#securityView .event-list');
     if (capturesList) {
-        capturesList.innerHTML = d.recent_captures.map(c =>
-            '<div class="event-item">' +
-            '<div class="event-icon">👤</div>' +
-            '<div class="event-content"><div class="event-title">' + c.type + '</div>' +
-            '<div class="event-meta"><span>' + c.location + '</span><span>' + c.time + '</span></div></div></div>'
-        ).join('');
+        capturesList.innerHTML = d.recent_captures.map(c => {
+            const t = c.type || '';
+            let icon = '👤';
+            if (t === '高危人员') icon = '⚠️';
+            else if (t === '重点人员') icon = '👤';
+            else if (t === '事件报警') icon = '🚨';
+            return '<div class="event-item">' +
+            '<div class="event-icon">' + icon + '</div>' +
+            '<div class="event-content"><div class="event-title">' + t + '</div>' +
+            '<div class="event-meta"><span>' + (c.location || '') + '</span><span>' + (c.time || '').replace('T', ' ') + '</span></div></div></div>';
+        }).join('');
     }
 }
 
